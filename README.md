@@ -2,7 +2,7 @@
 
 ![Voice Cards](client/public/og-image.jpg)
 
-A web application for recording, organizing, and sequencing audio clips with a warm analog tape aesthetic.
+A web application for recording, organizing, and sequencing audio clips with a warm analog tape aesthetic. 100% free & private. Your audio and text are stored in your browser. Nothing leaves your device. Run this app locally or use the one hosted at https://voicecards.org/.
 
 ## Features
 
@@ -50,14 +50,7 @@ A web application for recording, organizing, and sequencing audio clips with a w
   - Click the T (FileText) button on any card to generate/toggle transcript
   - Existing transcripts can be toggled on/off per card
 
-## Design Philosophy
-
-**Warm Analog Tape Aesthetic** - Inspired by vintage audio recording equipment:
-- Cream backgrounds (#FAF8F3) with warm grays and sepia tones
-- Burnt orange (#D97642) and deep teal (#2A7A7A) accents
-- Soft shadows and rounded corners suggesting physical depth
-- Typography: Fraunces (display), Inter (body), JetBrains Mono (technical)
-- Subtle paper texture overlay for tactile feel
+\*Optional transcript feature is not local, though it uses open source models.
 
 ## Technology Stack
 
