@@ -37,6 +37,7 @@ export interface Project {
 
 export interface Settings {
   theme: 'light' | 'dark';
+  transcriptsEnabled: boolean;
 }
 
 export interface AudioRecord {

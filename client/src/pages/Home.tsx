@@ -31,7 +31,7 @@ import type { Card, TranscriptSegment } from '@/types';
 type RecordingMode = 'new' | 're-record' | 'append';
 
 export default function Home() {
-  const { state, dispatch, addCard, updateCard, deleteCard: removeCard, reorderCards, showConfirmDialog, hideConfirmDialog, clearProject } = useProject();
+  const { state, dispatch, addCard, updateCard, deleteCard: removeCard, reorderCards, showConfirmDialog, hideConfirmDialog, clearProject, toggleTranscripts } = useProject();
   const { recordAction, canUndo, canRedo, undo, redo } = useHistory();
   
   // Filter cards based on search query
@@ -1117,12 +1117,14 @@ export default function Home() {
               isSelectionMode={isSelectionMode}
               selectedCount={selectedCardIds.size}
               totalCount={filteredCards.length}
+              transcriptsEnabled={state.settings.transcriptsEnabled}
               onEnterSelectionMode={handleEnterSelectionMode}
               onExitSelectionMode={handleExitSelectionMode}
               onSelectAll={handleSelectAll}
               onDeselectAll={handleDeselectAll}
               onDelete={handleBatchDelete}
               onMerge={handleMerge}
+              onToggleTranscripts={toggleTranscripts}
             />
           )}
           <CardList
@@ -1132,6 +1134,7 @@ export default function Home() {
             isIndividualPlaying={isIndividualPlaying}
             individualPlaybackProgress={playbackProgress}
             masterPlaybackProgress={currentCardProgress}
+            transcriptsEnabled={state.settings.transcriptsEnabled}
             onReorder={reorderCards}
             onCardPlay={handleIndividualCardPlay}
             onCardPause={handleIndividualCardPause}

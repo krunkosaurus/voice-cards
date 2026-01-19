@@ -16,6 +16,7 @@ type Action =
   | { type: 'SET_RECORDING'; payload: Partial<AppState['recording']> }
   | { type: 'SET_UI'; payload: Partial<AppState['ui']> }
   | { type: 'SET_THEME'; payload: 'light' | 'dark' }
+  | { type: 'SET_TRANSCRIPTS_ENABLED'; payload: boolean }
   | { type: 'INIT_STATE'; payload: Partial<AppState> };
 
 const initialState: AppState = {
@@ -46,6 +47,7 @@ const initialState: AppState = {
   },
   settings: {
     theme: 'light',
+    transcriptsEnabled: false,
   },
 };
 
@@ -138,6 +140,12 @@ function reducer(state: AppState, action: Action): AppState {
         settings: { ...state.settings, theme: action.payload },
       };
 
+    case 'SET_TRANSCRIPTS_ENABLED':
+      return {
+        ...state,
+        settings: { ...state.settings, transcriptsEnabled: action.payload },
+      };
+
     case 'INIT_STATE': {
       // Ensure all cards have order values (for legacy cards without order)
       const initializedCards = action.payload.cards?.map((card: Card, index: number) => ({
@@ -166,6 +174,7 @@ interface ProjectContextValue {
   showConfirmDialog: (dialog: ConfirmDialogState) => void;
   hideConfirmDialog: () => void;
   toggleTheme: () => void;
+  toggleTranscripts: () => void;
   clearProject: () => Promise<void>;
 }
 
@@ -254,6 +263,10 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_THEME', payload: newTheme });
   }, [state.settings.theme]);
 
+  const toggleTranscripts = useCallback(() => {
+    dispatch({ type: 'SET_TRANSCRIPTS_ENABLED', payload: !state.settings.transcriptsEnabled });
+  }, [state.settings.transcriptsEnabled]);
+
   const clearProject = useCallback(async () => {
     await clearAllData();
     dispatch({
@@ -278,6 +291,7 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     showConfirmDialog,
     hideConfirmDialog,
     toggleTheme,
+    toggleTranscripts,
     clearProject,
   };
 

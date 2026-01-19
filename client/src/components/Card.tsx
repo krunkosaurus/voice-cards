@@ -24,6 +24,7 @@ interface CardProps {
   isPlayingIndividually?: boolean;
   playbackProgress?: number;
   currentPlaybackTime?: number;
+  transcriptsEnabled?: boolean;
   onPlay: () => void;
   onPause?: () => void;
   onSeek?: (progress: number) => void;
@@ -52,6 +53,7 @@ export function Card({
   isPlayingIndividually = false,
   playbackProgress = 0,
   currentPlaybackTime = 0,
+  transcriptsEnabled = false,
   onPlay,
   onPause,
   onSeek,
@@ -81,12 +83,12 @@ export function Card({
   const titleInputRef = useRef<HTMLInputElement>(null);
   const colorHex = CARD_COLORS[card.color].hex;
 
-  // Auto-show transcript when playing and transcript exists
+  // Auto-show transcript when playing and transcript exists (only if global setting is enabled)
   useEffect(() => {
-    if ((isPlaying || isPlayingIndividually) && card.transcript && card.transcript.length > 0) {
+    if (transcriptsEnabled && (isPlaying || isPlayingIndividually) && card.transcript && card.transcript.length > 0) {
       setShowTranscript(true);
     }
-  }, [isPlaying, isPlayingIndividually, card.transcript]);
+  }, [isPlaying, isPlayingIndividually, card.transcript, transcriptsEnabled]);
 
   // Auto-hide transcript when playback stops (only if user didn't manually open it)
   useEffect(() => {
@@ -140,10 +142,10 @@ export function Card({
     }
   };
 
-  // Handle waveform click - also show transcript if exists
+  // Handle waveform click - also show transcript if exists and enabled
   const handleWaveformSeek = (progress: number) => {
-    // Show transcript if it exists when user interacts with waveform
-    if (card.transcript && card.transcript.length > 0 && !showTranscript) {
+    // Show transcript if it exists when user interacts with waveform (only if global setting is enabled)
+    if (transcriptsEnabled && card.transcript && card.transcript.length > 0 && !showTranscript) {
       setShowTranscript(true);
     }
     onSeek?.(progress);

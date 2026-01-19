@@ -32,6 +32,7 @@ interface CardListProps {
   isIndividualPlaying?: boolean;
   individualPlaybackProgress: number;
   masterPlaybackProgress: number;
+  transcriptsEnabled?: boolean;
   onReorder: (cards: CardType[]) => void;
   onCardPlay: (cardId: string) => void;
   onCardPause: () => void;
@@ -61,6 +62,7 @@ function SortableCard({
   isPlayingIndividually,
   playbackProgress,
   currentPlaybackTime,
+  transcriptsEnabled,
   onPlay,
   onPause,
   onSeek,
@@ -86,6 +88,7 @@ function SortableCard({
   isPlayingIndividually: boolean;
   playbackProgress: number;
   currentPlaybackTime: number;
+  transcriptsEnabled?: boolean;
   onPlay: () => void;
   onPause: () => void;
   onSeek?: (progress: number) => void;
@@ -124,6 +127,7 @@ function SortableCard({
         isPlayingIndividually={isPlayingIndividually}
         playbackProgress={playbackProgress}
         currentPlaybackTime={currentPlaybackTime}
+        transcriptsEnabled={transcriptsEnabled}
         onPlay={onPlay}
         onPause={onPause}
         onSeek={onSeek}
@@ -180,6 +184,7 @@ export function CardList({
   isIndividualPlaying = false,
   individualPlaybackProgress,
   masterPlaybackProgress,
+  transcriptsEnabled = false,
   onReorder,
   onCardPlay,
   onCardPause,
@@ -263,6 +268,7 @@ export function CardList({
                   isPlayingIndividually={card.id === playingCardId && isIndividualPlaying}
                   playbackProgress={progress}
                   currentPlaybackTime={currentPlaybackTime}
+                  transcriptsEnabled={transcriptsEnabled}
                   onPlay={() => onCardPlay(card.id)}
                   onPause={onCardPause}
                   onSeek={onCardSeek ? (p) => onCardSeek(card.id, p) : undefined}

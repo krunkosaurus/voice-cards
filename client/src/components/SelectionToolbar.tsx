@@ -2,34 +2,38 @@
 /* Design: Warm Analog Tape Aesthetic - Selection mode controls */
 
 import { Button } from './ui/button';
-import { CheckSquare, Square, Trash2, Merge, X } from 'lucide-react';
+import { CheckSquare, Square, Trash2, Merge, X, FileText } from 'lucide-react';
 
 interface SelectionToolbarProps {
   isSelectionMode: boolean;
   selectedCount: number;
   totalCount: number;
+  transcriptsEnabled: boolean;
   onEnterSelectionMode: () => void;
   onExitSelectionMode: () => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
   onDelete: () => void;
   onMerge: () => void;
+  onToggleTranscripts: () => void;
 }
 
 export function SelectionToolbar({
   isSelectionMode,
   selectedCount,
   totalCount,
+  transcriptsEnabled,
   onEnterSelectionMode,
   onExitSelectionMode,
   onSelectAll,
   onDeselectAll,
   onDelete,
   onMerge,
+  onToggleTranscripts,
 }: SelectionToolbarProps) {
   if (!isSelectionMode) {
     return (
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
@@ -38,6 +42,15 @@ export function SelectionToolbar({
         >
           <CheckSquare className="w-4 h-4" />
           Select
+        </Button>
+        <Button
+          variant={transcriptsEnabled ? "default" : "outline"}
+          size="sm"
+          onClick={onToggleTranscripts}
+          className="gap-2"
+        >
+          <FileText className="w-4 h-4" />
+          Transcripts {transcriptsEnabled ? "On" : "Off"}
         </Button>
       </div>
     );
