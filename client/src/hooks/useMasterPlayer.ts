@@ -116,7 +116,14 @@ export function useMasterPlayer(
     if (cards.length === 0) return;
 
     setIsPlaying(true);
-    await playCard(currentCardIndex);
+
+    // If audio is already loaded and paused, resume it
+    if (audioRef.current && audioRef.current.paused && audioRef.current.src) {
+      await audioRef.current.play();
+    } else {
+      // Otherwise start from current card
+      await playCard(currentCardIndex);
+    }
   }, [cards, currentCardIndex, playCard]);
 
   const pause = useCallback(() => {
@@ -153,6 +160,7 @@ export function useMasterPlayer(
       setGlobalTime(targetGlobalTime);
 
       if (wasPlaying) {
+        setIsPlaying(true); // Restore playing state so animation frame restarts
         playCard(cardIndex).then(() => {
           if (audioRef.current) {
             audioRef.current.currentTime = offsetInCard;
@@ -177,10 +185,32 @@ export function useMasterPlayer(
       setGlobalTime(cardStartTimes[index]);
 
       if (wasPlaying) {
+        setIsPlaying(true); // Restore playing state so animation frame restarts
         playCard(index);
       }
     },
     [cards, isPlaying, pause, playCard, cardStartTimes]
+  );
+
+  // Fast seek within the currently playing card (no audio reload)
+  const seekWithinCurrentCard = useCallback(
+    (progress: number) => {
+      if (!audioRef.current) return false;
+
+      const currentCard = cards[currentCardIndex];
+      if (!currentCard) return false;
+
+      const targetTime = currentCard.duration * progress;
+      audioRef.current.currentTime = targetTime;
+      setCurrentCardProgress(progress);
+
+      // Update global time
+      const cardStartTime = cardStartTimes[currentCardIndex] || 0;
+      setGlobalTime(cardStartTime + targetTime);
+
+      return true;
+    },
+    [cards, currentCardIndex, cardStartTimes]
   );
 
   // Start animation frame loop when playing
@@ -212,8 +242,8 @@ export function useMasterPlayer(
 
   return {
     isPlaying,
-    currentCardId: currentCardIndex >= 0 && currentCardIndex < cards.length 
-      ? cards[currentCardIndex]?.id 
+    currentCardId: currentCardIndex >= 0 && currentCardIndex < cards.length
+      ? cards[currentCardIndex]?.id
       : null,
     currentCardProgress,
     globalTime,
@@ -223,6 +253,7 @@ export function useMasterPlayer(
     play,
     pause,
     seekToTime,
+    seekWithinCurrentCard,
     jumpToCard,
     setPlaybackSpeed,
     setIsLooping,

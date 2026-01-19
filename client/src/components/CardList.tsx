@@ -29,6 +29,7 @@ interface CardListProps {
   cards: CardType[];
   currentCardId: string | null;
   playingCardId: string | null;
+  isIndividualPlaying?: boolean;
   individualPlaybackProgress: number;
   masterPlaybackProgress: number;
   onReorder: (cards: CardType[]) => void;
@@ -169,6 +170,7 @@ export function CardList({
   cards,
   currentCardId,
   playingCardId,
+  isIndividualPlaying = false,
   individualPlaybackProgress,
   masterPlaybackProgress,
   onReorder,
@@ -244,7 +246,7 @@ export function CardList({
                 card={card}
                 cardNumber={index + 1}
                 isPlaying={card.id === currentCardId}
-                isPlayingIndividually={card.id === playingCardId}
+                isPlayingIndividually={card.id === playingCardId && isIndividualPlaying}
                 playbackProgress={
                   card.id === playingCardId ? individualPlaybackProgress :
                   card.id === currentCardId ? masterPlaybackProgress :

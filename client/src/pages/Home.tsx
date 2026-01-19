@@ -69,7 +69,7 @@ export default function Home() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { isPlaying, currentCardId, currentCardProgress, globalTime, totalDuration, playbackSpeed, isLooping, play, pause, seekToTime, jumpToCard, setPlaybackSpeed, setIsLooping } = useMasterPlayer(
+  const { isPlaying, currentCardId, currentCardProgress, globalTime, totalDuration, playbackSpeed, isLooping, play, pause, seekToTime, seekWithinCurrentCard, jumpToCard, setPlaybackSpeed, setIsLooping } = useMasterPlayer(
     filteredCards,
     (cardId) => {
       dispatch({ type: 'SET_PLAYBACK', payload: { currentCardId: cardId } });
@@ -103,13 +103,31 @@ export default function Home() {
 
   // Individual card playback (separate from master player)
   const [playingCardId, setPlayingCardId] = useState<string | null>(null);
+  const [isIndividualPlaying, setIsIndividualPlaying] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
   const [playbackProgress, setPlaybackProgress] = useState<number>(0);
   const animationFrameRef = useRef<number | null>(null);
 
   const handleIndividualCardPlay = async (cardId: string) => {
     try {
-      // Stop any currently playing audio
+      // If the same card is paused, resume it
+      if (playingCardId === cardId && currentAudio && currentAudio.paused) {
+        await currentAudio.play();
+        setIsIndividualPlaying(true);
+        // Restart progress tracking
+        const updateProgress = () => {
+          if (currentAudio && currentAudio.duration > 0) {
+            setPlaybackProgress(currentAudio.currentTime / currentAudio.duration);
+          }
+          if (currentAudio && !currentAudio.paused) {
+            animationFrameRef.current = requestAnimationFrame(updateProgress);
+          }
+        };
+        animationFrameRef.current = requestAnimationFrame(updateProgress);
+        return;
+      }
+
+      // Stop any currently playing audio (different card)
       if (currentAudio) {
         currentAudio.pause();
         currentAudio.src = '';
@@ -118,44 +136,47 @@ export default function Home() {
           cancelAnimationFrame(animationFrameRef.current);
         }
       }
-      
+
       const { getAudio } = await import('@/services/db');
       const audioBlob = await getAudio(cardId);
       if (!audioBlob) {
         toast.error('Audio not found');
         return;
       }
-      
+
       // Create temporary audio element for this card only
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
-      
+
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         setPlayingCardId(null);
+        setIsIndividualPlaying(false);
         setCurrentAudio(null);
         setPlaybackProgress(0);
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
-      
+
       audio.onerror = () => {
         URL.revokeObjectURL(audioUrl);
         toast.error('Failed to play audio');
         setPlayingCardId(null);
+        setIsIndividualPlaying(false);
         setCurrentAudio(null);
         setPlaybackProgress(0);
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
         }
       };
-      
+
       setPlayingCardId(cardId);
+      setIsIndividualPlaying(true);
       setCurrentAudio(audio);
       setPlaybackProgress(0);
       await audio.play();
-      
+
       // Start progress tracking
       const updateProgress = () => {
         if (audio.duration > 0) {
@@ -168,53 +189,52 @@ export default function Home() {
       console.error('Error playing card audio:', error);
       toast.error('Failed to play audio');
       setPlayingCardId(null);
+      setIsIndividualPlaying(false);
     }
   };
 
   const handleIndividualCardPause = () => {
     if (currentAudio) {
       currentAudio.pause();
-      currentAudio.src = '';
-      setCurrentAudio(null);
+      // Don't clear the audio source - keep it for resume
     }
+    setIsIndividualPlaying(false);
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
-    setPlayingCardId(null);
-    setPlaybackProgress(0);
+    // Don't reset playingCardId or playbackProgress - keep them for resume
   };
 
   const handleCardSeek = (cardId: string, progress: number) => {
-    // If this card is playing individually, seek in the individual audio
+    // Case 1: This card is being played individually (playing or paused) - seek within it
+    // This allows moving the caret while paused, then resuming from that position
     if (playingCardId === cardId && currentAudio) {
       const targetTime = currentAudio.duration * progress;
       currentAudio.currentTime = targetTime;
       setPlaybackProgress(progress);
+      return;
     }
-    // If this card is playing in master player, seek in master player
-    else if (currentCardId === cardId) {
+
+    // Case 2: Master timeline is playing this card - fast seek within it (no audio reload)
+    if (isPlaying && currentCardId === cardId) {
+      seekWithinCurrentCard(progress);
+      return;
+    }
+
+    // Case 3: Master timeline is playing a different card - jump to clicked card
+    if (isPlaying) {
       const card = state.cards.find(c => c.id === cardId);
       if (card) {
         const targetTime = card.duration * progress;
-        // Calculate global time for this position in the card
         const cardIndex = state.cards.findIndex(c => c.id === cardId);
         const cardStartTime = state.cards.slice(0, cardIndex).reduce((sum, c) => sum + c.duration, 0);
         seekToTime(cardStartTime + targetTime);
       }
+      return;
     }
-    // If card is not playing, start playing from the clicked position
-    else {
-      handleIndividualCardPlay(cardId).then(() => {
-        // After starting playback, seek to the clicked position
-        setTimeout(() => {
-          if (currentAudio) {
-            const targetTime = currentAudio.duration * progress;
-            currentAudio.currentTime = targetTime;
-            setPlaybackProgress(progress);
-          }
-        }, 100);
-      });
-    }
+
+    // Case 4: Nothing is playing - do nothing (don't auto-start playback)
+    // User must explicitly click play button to start playback
   };
 
   // Keyboard shortcuts
@@ -1079,6 +1099,7 @@ export default function Home() {
             cards={filteredCards}
             currentCardId={currentCardId}
             playingCardId={playingCardId}
+            isIndividualPlaying={isIndividualPlaying}
             individualPlaybackProgress={playbackProgress}
             masterPlaybackProgress={currentCardProgress}
             onReorder={reorderCards}
