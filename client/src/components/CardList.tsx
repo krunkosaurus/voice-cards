@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Card as CardType } from '@/types';
+import type { Card as CardType, TranscriptSegment } from '@/types';
 import { Card } from './Card';
 import { Button } from './ui/button';
 import { Plus, Mic } from 'lucide-react';
@@ -47,6 +47,7 @@ interface CardListProps {
   onCardRemoveSilenceStart?: (card: CardType) => void;
   onCardRemoveSilenceEnd?: (card: CardType) => void;
   onCardTitleUpdate: (card: CardType) => void;
+  onCardTranscriptGenerated?: (cardId: string, transcript: TranscriptSegment[]) => void;
   onInsertAt: (position: number) => void;
   isSelectionMode?: boolean;
   selectedCardIds?: Set<string>;
@@ -59,6 +60,7 @@ function SortableCard({
   isPlaying,
   isPlayingIndividually,
   playbackProgress,
+  currentPlaybackTime,
   onPlay,
   onPause,
   onSeek,
@@ -73,6 +75,7 @@ function SortableCard({
   onRemoveSilenceStart,
   onRemoveSilenceEnd,
   onTitleUpdate,
+  onTranscriptGenerated,
   isSelectionMode,
   isSelected,
   onToggleSelection,
@@ -82,6 +85,7 @@ function SortableCard({
   isPlaying: boolean;
   isPlayingIndividually: boolean;
   playbackProgress: number;
+  currentPlaybackTime: number;
   onPlay: () => void;
   onPause: () => void;
   onSeek?: (progress: number) => void;
@@ -96,6 +100,7 @@ function SortableCard({
   onRemoveSilenceStart?: () => void;
   onRemoveSilenceEnd?: () => void;
   onTitleUpdate: (card: CardType) => void;
+  onTranscriptGenerated?: (cardId: string, transcript: TranscriptSegment[]) => void;
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
@@ -118,6 +123,7 @@ function SortableCard({
         isPlaying={isPlaying}
         isPlayingIndividually={isPlayingIndividually}
         playbackProgress={playbackProgress}
+        currentPlaybackTime={currentPlaybackTime}
         onPlay={onPlay}
         onPause={onPause}
         onSeek={onSeek}
@@ -135,6 +141,7 @@ function SortableCard({
         isSelected={isSelected}
         onToggleSelection={onToggleSelection}
         onTitleUpdate={onTitleUpdate}
+        onTranscriptGenerated={onTranscriptGenerated}
         dragListeners={listeners}
       />
     </div>
@@ -188,6 +195,7 @@ export function CardList({
   onCardRemoveSilenceStart,
   onCardRemoveSilenceEnd,
   onCardTitleUpdate,
+  onCardTranscriptGenerated,
   onInsertAt,
   isSelectionMode = false,
   selectedCardIds = new Set(),
@@ -240,42 +248,47 @@ export function CardList({
           {/* Insertion button at top */}
           <InsertionButton onClick={() => onInsertAt(0)} />
 
-          {cards.map((card, index) => (
-            <React.Fragment key={card.id}>
-              <SortableCard
-                card={card}
-                cardNumber={index + 1}
-                isPlaying={card.id === currentCardId}
-                isPlayingIndividually={card.id === playingCardId && isIndividualPlaying}
-                playbackProgress={
-                  card.id === playingCardId ? individualPlaybackProgress :
-                  card.id === currentCardId ? masterPlaybackProgress :
-                  0
-                }
-                onPlay={() => onCardPlay(card.id)}
-                onPause={onCardPause}
-                onSeek={onCardSeek ? (progress) => onCardSeek(card.id, progress) : undefined}
-                onEdit={() => onCardEdit(card)}
-                onReRecord={() => onCardReRecord(card)}
-                onAppend={() => onCardAppend(card)}
-                onDuplicate={() => onCardDuplicate(card)}
-                onDelete={() => onCardDelete(card)}
-                onTrimSplit={() => onCardTrimSplit(card)}
-                onAddSilenceStart={onCardAddSilenceStart ? () => onCardAddSilenceStart(card) : undefined}
-                onAddSilenceEnd={onCardAddSilenceEnd ? () => onCardAddSilenceEnd(card) : undefined}
-                onRemoveSilenceStart={onCardRemoveSilenceStart ? () => onCardRemoveSilenceStart(card) : undefined}
-                onRemoveSilenceEnd={onCardRemoveSilenceEnd ? () => onCardRemoveSilenceEnd(card) : undefined}
-                onTitleUpdate={onCardTitleUpdate}
-                isSelectionMode={isSelectionMode}
-                isSelected={selectedCardIds.has(card.id)}
-                onToggleSelection={onToggleCardSelection ? () => onToggleCardSelection(card.id) : undefined}
-              />
-              <InsertionButton 
-                onClick={() => onInsertAt(index + 1)} 
-                forceExpanded={index === cards.length - 1}
-              />
-            </React.Fragment>
-          ))}
+          {cards.map((card, index) => {
+            // Compute current playback time in seconds for this card
+            const progress = card.id === playingCardId ? individualPlaybackProgress :
+                            card.id === currentCardId ? masterPlaybackProgress : 0;
+            const currentPlaybackTime = progress * card.duration;
+
+            return (
+              <React.Fragment key={card.id}>
+                <SortableCard
+                  card={card}
+                  cardNumber={index + 1}
+                  isPlaying={card.id === currentCardId}
+                  isPlayingIndividually={card.id === playingCardId && isIndividualPlaying}
+                  playbackProgress={progress}
+                  currentPlaybackTime={currentPlaybackTime}
+                  onPlay={() => onCardPlay(card.id)}
+                  onPause={onCardPause}
+                  onSeek={onCardSeek ? (p) => onCardSeek(card.id, p) : undefined}
+                  onEdit={() => onCardEdit(card)}
+                  onReRecord={() => onCardReRecord(card)}
+                  onAppend={() => onCardAppend(card)}
+                  onDuplicate={() => onCardDuplicate(card)}
+                  onDelete={() => onCardDelete(card)}
+                  onTrimSplit={() => onCardTrimSplit(card)}
+                  onAddSilenceStart={onCardAddSilenceStart ? () => onCardAddSilenceStart(card) : undefined}
+                  onAddSilenceEnd={onCardAddSilenceEnd ? () => onCardAddSilenceEnd(card) : undefined}
+                  onRemoveSilenceStart={onCardRemoveSilenceStart ? () => onCardRemoveSilenceStart(card) : undefined}
+                  onRemoveSilenceEnd={onCardRemoveSilenceEnd ? () => onCardRemoveSilenceEnd(card) : undefined}
+                  onTitleUpdate={onCardTitleUpdate}
+                  onTranscriptGenerated={onCardTranscriptGenerated}
+                  isSelectionMode={isSelectionMode}
+                  isSelected={selectedCardIds.has(card.id)}
+                  onToggleSelection={onToggleCardSelection ? () => onToggleCardSelection(card.id) : undefined}
+                />
+                <InsertionButton
+                  onClick={() => onInsertAt(index + 1)}
+                  forceExpanded={index === cards.length - 1}
+                />
+              </React.Fragment>
+            );
+          })}
         </div>
       </SortableContext>
     </DndContext>

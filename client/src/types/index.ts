@@ -10,6 +10,12 @@ export type CardColor =
   | 'purple' 
   | 'pink';
 
+export interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+}
+
 export interface Card {
   id: string;
   label: string;
@@ -18,6 +24,7 @@ export interface Card {
   color: CardColor;
   duration: number;
   waveformData?: number[];
+  transcript?: TranscriptSegment[];
   createdAt: string;
   updatedAt: string;
   order: number;

@@ -2,7 +2,7 @@
 /* Design: Warm Analog Tape Aesthetic - Soft shadows, rounded corners, warm color bars */
 
 import { useState, useRef, useEffect } from 'react';
-import type { Card as CardType } from '@/types';
+import type { Card as CardType, TranscriptSegment } from '@/types';
 import { CARD_COLORS } from '@/lib/constants';
 import { formatTime, cn } from '@/lib/utils';
 import { Button } from './ui/button';
@@ -12,9 +12,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Play, Pause, MoreVertical, Pencil, Mic, PlusCircle, Copy, Trash2, Scissors, GripVertical, CheckSquare, Square, Plus, Minus } from 'lucide-react';
+import { Play, Pause, MoreVertical, Pencil, Mic, PlusCircle, Copy, Trash2, Scissors, GripVertical, CheckSquare, Square, Plus, Minus, FileText, Loader2 } from 'lucide-react';
 import { getAudio } from '@/services/db';
 import { WaveformThumbnail } from './WaveformThumbnail';
+import { Transcript } from './Transcript';
 
 interface CardProps {
   card: CardType;
@@ -22,6 +23,7 @@ interface CardProps {
   isPlaying?: boolean;
   isPlayingIndividually?: boolean;
   playbackProgress?: number;
+  currentPlaybackTime?: number;
   onPlay: () => void;
   onPause?: () => void;
   onSeek?: (progress: number) => void;
@@ -36,6 +38,7 @@ interface CardProps {
   onRemoveSilenceStart?: () => void;
   onRemoveSilenceEnd?: () => void;
   onTitleUpdate?: (updatedCard: CardType) => void;
+  onTranscriptGenerated?: (cardId: string, transcript: TranscriptSegment[]) => void;
   dragListeners?: any;
   isSelectionMode?: boolean;
   isSelected?: boolean;
@@ -48,6 +51,7 @@ export function Card({
   isPlaying = false,
   isPlayingIndividually = false,
   playbackProgress = 0,
+  currentPlaybackTime = 0,
   onPlay,
   onPause,
   onSeek,
@@ -62,6 +66,7 @@ export function Card({
   onRemoveSilenceStart,
   onRemoveSilenceEnd,
   onTitleUpdate,
+  onTranscriptGenerated,
   dragListeners,
   isSelectionMode = false,
   isSelected = false,
@@ -70,8 +75,79 @@ export function Card({
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(card.label);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [userOpenedTranscript, setUserOpenedTranscript] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const colorHex = CARD_COLORS[card.color].hex;
+
+  // Auto-show transcript when playing and transcript exists
+  useEffect(() => {
+    if ((isPlaying || isPlayingIndividually) && card.transcript && card.transcript.length > 0) {
+      setShowTranscript(true);
+    }
+  }, [isPlaying, isPlayingIndividually, card.transcript]);
+
+  // Auto-hide transcript when playback stops (only if user didn't manually open it)
+  useEffect(() => {
+    if (!isPlaying && !isPlayingIndividually && showTranscript && card.transcript && !userOpenedTranscript) {
+      // Keep transcript open for a moment after stopping, then close
+      const timer = setTimeout(() => {
+        setShowTranscript(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isPlaying, isPlayingIndividually, userOpenedTranscript]);
+
+  const handleTranscriptToggle = async () => {
+    // If transcript exists, just toggle visibility
+    if (card.transcript && card.transcript.length > 0) {
+      const newState = !showTranscript;
+      setShowTranscript(newState);
+      setUserOpenedTranscript(newState); // Track manual toggle
+      return;
+    }
+
+    // Otherwise, generate transcript
+    setIsTranscribing(true);
+    try {
+      const audioBlob = await getAudio(card.id);
+      if (!audioBlob) {
+        throw new Error('Audio not found');
+      }
+
+      const { transcribeAudio } = await import('@/services/transcription');
+      const transcript = await transcribeAudio(audioBlob);
+
+      if (onTranscriptGenerated) {
+        onTranscriptGenerated(card.id, transcript);
+      }
+      setShowTranscript(true);
+      setUserOpenedTranscript(true); // User initiated this
+    } catch (error) {
+      console.error('Transcription failed:', error);
+      const { toast } = await import('sonner');
+      toast.error('Failed to generate transcript');
+    } finally {
+      setIsTranscribing(false);
+    }
+  };
+
+  const handleSegmentClick = (time: number) => {
+    if (onSeek && card.duration > 0) {
+      const progress = time / card.duration;
+      onSeek(progress);
+    }
+  };
+
+  // Handle waveform click - also show transcript if exists
+  const handleWaveformSeek = (progress: number) => {
+    // Show transcript if it exists when user interacts with waveform
+    if (card.transcript && card.transcript.length > 0 && !showTranscript) {
+      setShowTranscript(true);
+    }
+    onSeek?.(progress);
+  };
 
   // Select all text when entering edit mode
   useEffect(() => {
@@ -207,8 +283,27 @@ export function Card({
               waveformData={card.waveformData}
               color={colorHex}
               playbackProgress={(isPlayingIndividually || isPlaying) ? playbackProgress : 0}
-              onSeek={onSeek}
+              onSeek={handleWaveformSeek}
             />
+          </div>
+
+          {/* Transcript section with slide animation */}
+          <div
+            className={cn(
+              'overflow-hidden transition-all duration-300 ease-in-out',
+              showTranscript ? 'max-h-40 opacity-100 mb-2' : 'max-h-0 opacity-0'
+            )}
+          >
+            {card.transcript && card.transcript.length > 0 && (
+              <div className="bg-muted/50 rounded-lg p-3 border border-border/50">
+                <Transcript
+                  segments={card.transcript}
+                  currentTime={currentPlaybackTime}
+                  isPlaying={isPlaying || isPlayingIndividually}
+                  onSegmentClick={handleSegmentClick}
+                />
+              </div>
+            )}
           </div>
 
           {/* Tags */}
@@ -240,6 +335,28 @@ export function Card({
 
           {/* Quick action buttons - hidden on mobile to save space */}
           <div className="hidden sm:flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "shrink-0 h-8 w-8",
+                card.transcript && card.transcript.length > 0
+                  ? "hover:bg-primary/10 text-primary"
+                  : "hover:bg-muted"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTranscriptToggle();
+              }}
+              disabled={isTranscribing}
+              title={card.transcript ? "Toggle transcript" : "Generate transcript"}
+            >
+              {isTranscribing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -278,6 +395,14 @@ export function Card({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleTranscriptToggle} disabled={isTranscribing}>
+                {isTranscribing ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <FileText className="w-4 h-4 mr-2" />
+                )}
+                {card.transcript ? 'Toggle Transcript' : 'Generate Transcript'}
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={onEdit}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit Details

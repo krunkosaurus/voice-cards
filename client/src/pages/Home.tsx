@@ -26,7 +26,7 @@ import { importProject } from '@/services/importProject';
 import { exportAsAudio } from '@/services/exportAudio';
 import { uuid } from '@/lib/utils';
 import { toast } from 'sonner';
-import type { Card } from '@/types';
+import type { Card, TranscriptSegment } from '@/types';
 
 type RecordingMode = 'new' | 're-record' | 'append';
 
@@ -308,6 +308,9 @@ export default function Home() {
         }
 
         toast.success('Recording saved!');
+
+        // Auto-generate transcript in background
+        generateTranscriptForCard(newCard.id, blob);
       } else if (recordingMode === 're-record' && targetCardId) {
         // Replace audio and update metadata
         const card = state.cards.find(c => c.id === targetCardId);
@@ -438,6 +441,33 @@ export default function Home() {
 
   const handleCardTitleUpdate = (updatedCard: Card) => {
     updateCard(updatedCard);
+  };
+
+  const handleTranscriptGenerated = async (cardId: string, transcript: TranscriptSegment[]) => {
+    const card = state.cards.find(c => c.id === cardId);
+    if (!card) return;
+
+    const updatedCard = {
+      ...card,
+      transcript,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await saveCard(updatedCard);
+    updateCard(updatedCard);
+    toast.success('Transcript generated!');
+  };
+
+  // Auto-generate transcript for a card
+  const generateTranscriptForCard = async (cardId: string, audioBlob: Blob) => {
+    try {
+      const { transcribeAudio } = await import('@/services/transcription');
+      const transcript = await transcribeAudio(audioBlob);
+      await handleTranscriptGenerated(cardId, transcript);
+    } catch (error) {
+      console.error('Auto-transcription failed:', error);
+      // Don't show error toast - transcript generation is optional
+    }
   };
 
   const handleTrim = async (startTime: number, endTime: number) => {
@@ -1117,6 +1147,7 @@ export default function Home() {
             onCardRemoveSilenceStart={handleCardRemoveSilenceStart}
             onCardRemoveSilenceEnd={handleCardRemoveSilenceEnd}
             onCardTitleUpdate={handleCardTitleUpdate}
+            onCardTranscriptGenerated={handleTranscriptGenerated}
             onInsertAt={handleInsertAt}
             isSelectionMode={isSelectionMode}
             selectedCardIds={selectedCardIds}
