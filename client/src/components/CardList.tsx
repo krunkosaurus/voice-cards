@@ -226,22 +226,64 @@ export function CardList({
 
   if (cards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-4">
-        <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mb-4">
-          <Mic className="w-12 h-12 text-muted-foreground" />
+      <div className="flex flex-col items-center justify-center py-8 px-4">
+        <div className="relative max-w-md w-full">
+          {/* Note card styling */}
+          <div className="bg-card border border-border rounded-xl shadow-lg overflow-hidden transform rotate-[-0.5deg] hover:rotate-0 transition-transform duration-300">
+            {/* Color bar at top like voice cards */}
+            <div className="h-2 bg-gradient-to-r from-primary via-orange-400 to-yellow-400" />
+
+            <div className="p-6 sm:p-8">
+              {/* Mic icon */}
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <Mic className="w-8 h-8 text-primary" />
+              </div>
+
+              <h2 className="text-2xl font-display font-semibold text-center mb-4">
+                Welcome to Voice Cards
+              </h2>
+
+              <div className="text-muted-foreground space-y-3 text-sm sm:text-base">
+                <p>
+                  Record, organize, and sequence audio clips with ease. Perfect for voice notes,
+                  podcast segments, language practice, or audio storyboarding.
+                </p>
+                <p>
+                  <span className="text-foreground font-medium">Trim, split, merge</span>, and{' '}
+                  <span className="text-foreground font-medium">reorder</span> your recordings.
+                  Add <span className="text-foreground font-medium">automatic transcripts</span> with
+                  synchronized highlighting.
+                </p>
+              </div>
+
+              {/* Privacy note */}
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg border border-border/50">
+                <p className="text-sm text-center">
+                  <span className="text-primary font-semibold">100% free & private</span>
+                  <br />
+                  <span className="text-muted-foreground">
+                    Your audio and text are stored in your browser. Nothing leaves your device.
+                  </span>
+                </p>
+              </div>
+
+              {/* CTA Button */}
+              <div className="mt-6 flex justify-center">
+                <Button
+                  size="lg"
+                  onClick={() => onInsertAt(0)}
+                  className="gap-2 bg-primary hover:bg-primary/90 shadow-md"
+                >
+                  <Plus className="w-5 h-5" />
+                  Start Recording
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Decorative shadow/paper effect */}
+          <div className="absolute inset-0 bg-card border border-border rounded-xl -z-10 transform rotate-[1deg] translate-y-1 opacity-50" />
         </div>
-        <h3 className="text-xl font-display font-semibold mb-2">No voice cards yet</h3>
-        <p className="text-muted-foreground mb-6 text-center max-w-sm">
-          Tap below to record your first clip
-        </p>
-        <Button
-          size="lg"
-          onClick={() => onInsertAt(0)}
-          className="gap-2 bg-primary hover:bg-primary/90"
-        >
-          <Plus className="w-5 h-5" />
-          Record
-        </Button>
       </div>
     );
   }
