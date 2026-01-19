@@ -2,7 +2,7 @@
 /* Design: Warm Analog Tape Aesthetic - Microphone setup control */
 
 import { useState, useEffect, useRef } from 'react';
-import { Mic, Settings, Check, AlertTriangle } from 'lucide-react';
+import { Mic, Settings, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -25,7 +25,6 @@ export function MicrophoneSetup({ onDeviceChange }: MicrophoneSetupProps) {
   const [audioLevel, setAudioLevel] = useState(0);
   const [peakLevel, setPeakLevel] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [qualityWarnings, setQualityWarnings] = useState<string[]>([]);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -172,30 +171,8 @@ export function MicrophoneSetup({ onDeviceChange }: MicrophoneSetupProps) {
       
       // Track peak level
       setPeakLevel(prev => Math.max(prev, dbfs));
-      
-      // Detect quality issues
-      const warnings: string[] = [];
-      
-      // Check for clipping (values near max)
-      const maxValue = Math.max(...Array.from(timeDataArray));
-      const minValue = Math.min(...Array.from(timeDataArray));
-      if (maxValue >= 250 || minValue <= 5) {
-        warnings.push('Clipping detected - reduce microphone gain');
-      }
-      
-      // Check for low volume (below -30 dBFS is too quiet)
-      if (dbfs < -30 && dbfs > -60) {
-        warnings.push('Volume too low - increase microphone gain');
-      }
-      
-      // Check for background noise (high baseline when not speaking)
-      const noiseFloor = Math.min(...Array.from(dataArray.slice(0, 10)));
-      if (noiseFloor > 30 && dbfs < -20) {
-        warnings.push('Background noise detected - check environment');
-      }
-      
+
       setAudioLevel(dbfs);
-      setQualityWarnings(warnings);
       animationFrameRef.current = requestAnimationFrame(updateLevel);
     };
     
@@ -205,7 +182,6 @@ export function MicrophoneSetup({ onDeviceChange }: MicrophoneSetupProps) {
   const stopTesting = () => {
     setIsTestingMic(false);
     setAudioLevel(0);
-    setQualityWarnings([]);
     
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -226,7 +202,6 @@ export function MicrophoneSetup({ onDeviceChange }: MicrophoneSetupProps) {
     setIsTestingMic(false);
     setAudioLevel(0);
     setPeakLevel(0);
-    setQualityWarnings([]);
   };
 
   const toggleTest = () => {
@@ -343,17 +318,6 @@ export function MicrophoneSetup({ onDeviceChange }: MicrophoneSetupProps) {
               <span className="text-[10px] text-blue-500 font-mono">↑{peakLevel.toFixed(1)} dB</span>
             </div>
           </div>
-          
-          {qualityWarnings.length > 0 && (
-            <div className="flex flex-col gap-1">
-              {qualityWarnings.map((warning, index) => (
-                <div key={index} className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-500">
-                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-                  <span>{warning}</span>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
     </div>
