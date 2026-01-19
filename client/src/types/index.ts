@@ -20,6 +20,7 @@ export interface Card {
   waveformData?: number[];
   createdAt: string;
   updatedAt: string;
+  order: number;
 }
 
 export interface Project {

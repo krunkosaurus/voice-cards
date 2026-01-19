@@ -51,7 +51,14 @@ export async function saveProject(project: Project): Promise<void> {
 // Card operations
 export async function getAllCards(): Promise<Card[]> {
   const db = await initDB();
-  return db.getAll('cards');
+  const cards = await db.getAll('cards');
+  // Sort by order field, falling back to createdAt for legacy cards without order
+  return cards.sort((a, b) => {
+    const orderA = a.order ?? Infinity;
+    const orderB = b.order ?? Infinity;
+    if (orderA !== orderB) return orderA - orderB;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
 }
 
 export async function getCard(id: string): Promise<Card | undefined> {

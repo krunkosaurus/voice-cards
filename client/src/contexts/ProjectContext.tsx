@@ -3,7 +3,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import type { Card, AppState, ConfirmDialogState } from '@/types';
-import { getAllCards, getProject, saveProject, getSettings, saveSettings, clearAllData } from '@/services/db';
+import { getAllCards, getProject, saveProject, getSettings, saveSettings, clearAllData, saveCards } from '@/services/db';
 import { uuid } from '@/lib/utils';
 
 type Action =
@@ -51,18 +51,26 @@ const initialState: AppState = {
 
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
-    case 'SET_CARDS':
+    case 'SET_CARDS': {
+      // Ensure all cards have order values based on their position
+      const cardsWithOrder = action.payload.map((card, index) => ({
+        ...card,
+        order: index,
+      }));
       return {
         ...state,
-        cards: action.payload,
+        cards: cardsWithOrder,
         playback: {
           ...state.playback,
-          totalDuration: action.payload.reduce((sum, card) => sum + card.duration, 0),
+          totalDuration: cardsWithOrder.reduce((sum, card) => sum + card.duration, 0),
         },
       };
+    }
 
     case 'ADD_CARD': {
-      const newCards = [...state.cards, action.payload];
+      // Assign order value to the new card (append at end)
+      const newCard = { ...action.payload, order: state.cards.length };
+      const newCards = [...state.cards, newCard];
       return {
         ...state,
         cards: newCards,
@@ -130,8 +138,18 @@ function reducer(state: AppState, action: Action): AppState {
         settings: { ...state.settings, theme: action.payload },
       };
 
-    case 'INIT_STATE':
-      return { ...state, ...action.payload };
+    case 'INIT_STATE': {
+      // Ensure all cards have order values (for legacy cards without order)
+      const initializedCards = action.payload.cards?.map((card: Card, index: number) => ({
+        ...card,
+        order: card.order ?? index,
+      })) || state.cards;
+      return {
+        ...state,
+        ...action.payload,
+        cards: initializedCards,
+      };
+    }
 
     default:
       return state;
@@ -189,6 +207,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.cards]);
 
+  // Persist cards with order values whenever cards change
+  useEffect(() => {
+    if (state.cards.length > 0) {
+      saveCards(state.cards);
+    }
+  }, [state.cards]);
+
   // Persist settings
   useEffect(() => {
     saveSettings(state.settings);
@@ -207,7 +232,13 @@ export function ProjectProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const reorderCards = useCallback((cards: Card[]) => {
-    dispatch({ type: 'REORDER_CARDS', payload: cards });
+    // Assign order values based on position and persist to IndexedDB
+    const orderedCards = cards.map((card, index) => ({
+      ...card,
+      order: index,
+    }));
+    dispatch({ type: 'REORDER_CARDS', payload: orderedCards });
+    saveCards(orderedCards);
   }, []);
 
   const showConfirmDialog = useCallback((dialog: ConfirmDialogState) => {

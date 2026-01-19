@@ -17,7 +17,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { AudioTrimmer } from '@/components/AudioTrimmer';
 import { useMasterPlayer } from '@/hooks/useMasterPlayer';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { saveCard, saveAudio, deleteCard, saveCards } from '@/services/db';
+import { saveCard, saveAudio, deleteCard } from '@/services/db';
 import { getAudioDuration, appendAudioBlobs } from '@/services/audioUtils';
 import { trimAudio, splitAudio, addSilenceToStart, addSilenceToEnd, removeSilenceFromStart, removeSilenceFromEnd } from '@/services/audioTrimmer';
 import { generateWaveformData } from '@/services/waveformGenerator';
@@ -282,7 +282,7 @@ export default function Home() {
           const newCards = [...state.cards];
           newCards.splice(insertPosition, 0, newCard);
           dispatch({ type: 'SET_CARDS', payload: newCards });
-          await saveCards(newCards);
+          // Note: saveCards is handled by effect in ProjectContext with order values
         } else {
           addCard(newCard);
         }
@@ -403,7 +403,7 @@ export default function Home() {
       const newCards = [...state.cards];
       newCards.splice(index + 1, 0, newCard);
       dispatch({ type: 'SET_CARDS', payload: newCards });
-      await saveCards(newCards);
+      // Note: saveCards is handled by effect in ProjectContext with order values
 
       toast.success('Card duplicated!');
     } catch (error) {
@@ -518,7 +518,7 @@ export default function Home() {
       newCards[index] = updatedFirstCard;
       newCards.splice(index + 1, 0, secondCard);
       dispatch({ type: 'SET_CARDS', payload: newCards });
-      await saveCards(newCards);
+      // Note: saveCards is handled by effect in ProjectContext with order values
 
       // Create snapshot after split
       const afterSnapshot = await createSnapshot(newCards, [updatedFirstCard.id, secondCard.id]);

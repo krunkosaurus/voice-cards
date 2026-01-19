@@ -18,30 +18,41 @@ export function WaveformThumbnail({ cardId, waveformData: propWaveformData, colo
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [canvasSize, setCanvasSize] = useState({ width: 400, height: 80 });
+  // Larger height on mobile (96px) vs desktop (80px)
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+  const baseHeight = isMobile ? 96 : 80;
+  const [canvasSize, setCanvasSize] = useState({ width: 400, height: baseHeight });
 
   const [waveformData, setWaveformData] = useState<number[]>([]);
 
-  // Dynamically resize canvas based on container width
+  // Dynamically resize canvas based on container width and viewport
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const width = entry.contentRect.width;
-        // Use device pixel ratio for sharp rendering
-        const dpr = window.devicePixelRatio || 1;
-        setCanvasSize({
-          width: Math.floor(width * dpr),
-          height: Math.floor(80 * dpr)
-        });
-      }
+    const updateSize = () => {
+      if (!containerRef.current) return;
+      const width = containerRef.current.offsetWidth;
+      const dpr = window.devicePixelRatio || 1;
+      // Larger height on mobile (96px) vs desktop (80px)
+      const height = window.innerWidth < 640 ? 96 : 80;
+      setCanvasSize({
+        width: Math.floor(width * dpr),
+        height: Math.floor(height * dpr)
+      });
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateSize();
     });
 
+    // Also listen for window resize to catch viewport changes
+    window.addEventListener('resize', updateSize);
     resizeObserver.observe(containerRef.current);
+    updateSize(); // Initial size calculation
 
     return () => {
       resizeObserver.disconnect();
+      window.removeEventListener('resize', updateSize);
     };
   }, []);
 
@@ -135,7 +146,7 @@ export function WaveformThumbnail({ cardId, waveformData: propWaveformData, colo
         width={canvasSize.width}
         height={canvasSize.height}
         onClick={handleClick}
-        className={`w-full h-20 rounded ${className} ${onSeek ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+        className={`w-full h-24 sm:h-20 rounded ${className} ${onSeek ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
         style={{ 
           backgroundColor: 'transparent',
           opacity: isLoading ? 0.3 : 1,

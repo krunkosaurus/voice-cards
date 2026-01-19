@@ -126,9 +126,9 @@ export function Card({
 
       <div className="flex">
         {/* Main content area */}
-        <div className="flex-1 p-4 flex items-start gap-3">
+        <div className="flex-1 p-2 sm:p-4 flex items-start gap-2 sm:gap-3">
           {/* Selection checkbox or card number */}
-          <div className="shrink-0 w-8 h-8 flex items-center justify-center">
+          <div className="shrink-0 w-6 sm:w-8 h-8 flex items-center justify-center">
             {isSelectionMode ? (
               <Button
                 variant="ghost"
@@ -202,10 +202,10 @@ export function Card({
 
           {/* Waveform thumbnail */}
           <div className="my-2">
-            <WaveformThumbnail 
+            <WaveformThumbnail
               cardId={card.id}
               waveformData={card.waveformData}
-              color={colorHex} 
+              color={colorHex}
               playbackProgress={(isPlayingIndividually || isPlaying) ? playbackProgress : 0}
               onSeek={onSeek}
             />
@@ -238,8 +238,8 @@ export function Card({
           )}
           </div>
 
-          {/* Quick action buttons */}
-          <div className="flex items-center gap-1">
+          {/* Quick action buttons - hidden on mobile to save space */}
+          <div className="hidden sm:flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
@@ -332,11 +332,11 @@ export function Card({
 
         {/* Drag handle - full height on right edge */}
         <div
-          className="w-10 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors border-l border-border"
+          className="w-8 sm:w-10 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors border-l border-border"
           {...dragListeners}
           title="Drag to reorder"
         >
-          <GripVertical className="w-5 h-5 text-muted-foreground" />
+          <GripVertical className="w-4 sm:w-5 h-4 sm:h-5 text-muted-foreground" />
         </div>
       </div>
     </div>
