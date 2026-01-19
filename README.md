@@ -14,19 +14,39 @@ A web application for recording, organizing, and sequencing audio clips with a w
 - **Data Persistence**: All data stored locally in IndexedDB
 
 ### Enhancement Features (v2)
-- **Keyboard Shortcuts**: 
+- **Keyboard Shortcuts**:
   - `Space`: Play/Pause
   - `R`: Record new card
   - `E`: Edit first card
   - `←`: Seek backward 5 seconds
   - `→`: Seek forward 5 seconds
-  
+
 - **Waveform Thumbnails**: Visual audio preview on each card matching the card's color
 
-- **Audio Trim/Split**: 
+- **Audio Trim/Split**:
   - Trim silence or unwanted sections from recordings
   - Split long recordings into multiple cards
   - Visual waveform editor with preview playback
+
+### Transcription Features (v3)
+- **Auto-Transcription**: Automatic speech-to-text transcription using Sogni Voice API
+  - Generates transcripts with segment-level timestamps
+  - Auto-generates transcript after new recordings (when enabled)
+
+- **Animated Transcript Display**:
+  - Segment highlighting synchronized with audio playback
+  - Click any segment to seek to that time
+  - Auto-scroll keeps current segment visible
+  - Slide-in/out animation during playback
+
+- **Global Transcripts Toggle**:
+  - "Transcripts On/Off" button next to Select
+  - Setting persists across page refreshes
+  - When off, transcripts won't auto-show during playback
+
+- **Manual Transcript Generation**:
+  - Click the T (FileText) button on any card to generate/toggle transcript
+  - Existing transcripts can be toggled on/off per card
 
 ## Design Philosophy
 
@@ -62,7 +82,9 @@ client/src/
 │   ├── ConfirmDialog.tsx        # Confirmation dialogs
 │   ├── Waveform.tsx             # Real-time waveform
 │   ├── WaveformThumbnail.tsx    # Card waveform preview
-│   └── AudioTrimmer.tsx         # Trim/split interface
+│   ├── AudioTrimmer.tsx         # Trim/split interface
+│   ├── Transcript.tsx           # Animated transcript display
+│   └── SelectionToolbar.tsx     # Multi-select & transcripts toggle
 ├── contexts/
 │   ├── ProjectContext.tsx       # Global state management
 │   └── ThemeContext.tsx         # Theme provider
@@ -75,6 +97,7 @@ client/src/
 │   ├── audioUtils.ts            # Audio processing
 │   ├── audioTrimmer.ts          # Trim/split utilities
 │   ├── waveformGenerator.ts     # Waveform visualization
+│   ├── transcription.ts         # Sogni Voice API transcription
 │   ├── exportProject.ts         # ZIP export
 │   └── importProject.ts         # ZIP import
 ├── types/
@@ -92,6 +115,9 @@ Each card contains:
 - `tags`: Array of tag strings (max 10)
 - `color`: One of 8 color options (neutral, red, orange, yellow, green, blue, purple, pink)
 - `duration`: Audio length in seconds
+- `waveformData`: Array of amplitude values for visualization
+- `transcript`: Array of transcript segments with `start`, `end`, `text`
+- `order`: Position in the card list (persisted for drag/drop ordering)
 - `createdAt`: ISO timestamp
 - `updatedAt`: ISO timestamp
 
