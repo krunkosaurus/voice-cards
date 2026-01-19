@@ -1,5 +1,7 @@
 # Voice Cards
 
+![Voice Cards](client/public/og-image.jpg)
+
 A web application for recording, organizing, and sequencing audio clips with a warm analog tape aesthetic.
 
 ## Features
