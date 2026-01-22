@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 3
-**Phase Status:** In Progress (2/4 plans)
+**Phase Status:** In Progress (3/4 plans)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -10,22 +10,22 @@
 |-------|------|--------|--------------|
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
-| 3 | Real-Time Sync | In Progress (2/4 plans) | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
+| 3 | Real-Time Sync | In Progress (3/4 plans) | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Not Started | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
 **Overall:** 2/6 phases complete
 
-Progress: [======....] 60%
+Progress: [=======...] 70%
 
 ## Current Focus
 
 **Phase 3: Real-Time Sync - IN PROGRESS**
-- Status: In Progress (2/4 plans done)
+- Status: In Progress (3/4 plans done)
 - Goal: Editor changes broadcast to viewers in real-time
-- Last Completed: 03-02-PLAN.md (Operation Handlers)
-- Next Action: Execute 03-03-PLAN.md (Broadcast Wrappers)
+- Last Completed: 03-03-PLAN.md (Broadcast Wrappers)
+- Next Action: Execute 03-04-PLAN.md (if exists) or complete Phase 3
 
 ## Key Decisions
 
@@ -63,6 +63,8 @@ Progress: [======....] 60%
 | pendingAudioOps Map approach | Track audio operations awaiting binary data by cardId | 2026-01-22 |
 | Operation routing before sync messages | Operations are more specific, route first in callback | 2026-01-22 |
 | Card state from ProjectContext | Use projectState.cards for merge operations | 2026-01-22 |
+| Card.tsx calls syncedUpdateCard directly | Avoids double dispatch through callback chain | 2026-01-22 |
+| shouldBroadcast() helper pattern | Centralizes 3-condition check for broadcasting | 2026-01-22 |
 
 ## Technical Context
 
@@ -89,11 +91,12 @@ Progress: [======....] 60%
 - `client/src/contexts/SyncContext.tsx` - Sync state management, orchestration, operation handlers
 - `client/src/components/SyncProgress.tsx` - Progress bar during sync transfer (XFER-02)
 - `client/src/components/OverwriteConfirmDialog.tsx` - Warning dialog before overwrite (XFER-04)
+- `client/src/hooks/useSyncedActions.ts` - Hook wrapping ProjectContext actions with broadcast logic
 
 ## Session Continuity
 
-Last session: 2026-01-22T12:24:34Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-01-22T12:34:15Z
+Stopped at: Completed 03-03-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -102,7 +105,7 @@ None currently.
 
 ## Notes
 
-Phase 3 continuing. Operation handlers now implemented.
+Phase 3 continuing. Broadcast wrappers now implemented.
 
 **Plan 03-01:** Sync operation types and message creators (COMPLETE)
 - CardCreateOperation, CardUpdateOperation, CardDeleteOperation
@@ -118,13 +121,20 @@ Phase 3 continuing. Operation handlers now implemented.
 - pendingAudioOps Map for audio change coordination
 - getConnection/getAudioTransfer accessors exposed
 
-Key capabilities now available:
-- Remote operations can be received and applied to local state
-- Origin flag prevents infinite broadcast loops
-- Audio changes wait for binary transfer completion
-- Connection and audio transfer accessible for broadcast wrappers
+**Plan 03-03:** Broadcast wrappers (COMPLETE)
+- useSyncedActions hook with synced versions of all card operations
+- shouldBroadcast() pattern: connected + editor + not applying remote
+- Home.tsx uses synced actions for all card operations
+- Card.tsx uses synced action for inline title edits
+- All SYNC-01 through SYNC-05 requirements now fulfilled
 
-Next: 03-03-PLAN.md - Broadcast Wrappers (wrap ProjectContext actions to broadcast)
+Key capabilities now available:
+- Editor broadcasts all card operations to viewer via WebRTC
+- Viewer receives operations and applies to local state
+- Origin flag prevents infinite broadcast loops
+- Audio changes include full chunk protocol
+
+Next: Check if 03-04-PLAN.md exists or Phase 3 complete
 
 ---
 
