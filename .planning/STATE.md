@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 6
-**Phase Status:** In Progress (1/? plans)
+**Phase Status:** In Progress (2/? plans)
 **Updated:** 2026-01-23
 
 ## Progress
@@ -13,7 +13,7 @@
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Verified | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Complete (4/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
-| 6 | QR Code Support | In Progress (1/?) | CONN-06 |
+| 6 | QR Code Support | In Progress (2/?) | CONN-06 |
 
 **Overall:** 5/6 phases complete
 
@@ -22,9 +22,10 @@ Progress: [==========] 97%
 ## Current Focus
 
 **Phase 6: QR Code Support - IN PROGRESS**
-- Status: 1/? plans complete (06-01)
+- Status: 2/? plans complete (06-01, 06-02)
 - Goal: QR code generation and scanning for easier SDP exchange
 - Plan 06-01 complete: QR libraries installed, QRCodeDisplay component, useCameraAvailability hook
+- Plan 06-02 complete: QRScanner component with useQRScanner hook and ScannerOverlay
 
 ## Key Decisions
 
@@ -93,6 +94,10 @@ Progress: [==========] 97%
 | gracefulDisconnect from context | SyncIndicator calls context directly, no prop drilling | 2026-01-23 |
 | QR size 192px with level M | Good balance for ~1000 char SDP codes | 2026-01-23 |
 | enumerateDevices() for camera detection | No permission prompt required | 2026-01-23 |
+| useRef for scanner instance | Avoids StrictMode double initialization | 2026-01-23 |
+| No 'exact' facingMode constraint | iOS Safari compatibility | 2026-01-23 |
+| clip-path polygon for cutout overlay | Single div approach, cleaner than multiple positioned divs | 2026-01-23 |
+| useId for scanner container ID | Supports multiple scanner instances on same page | 2026-01-23 |
 
 ## Technical Context
 
@@ -125,11 +130,14 @@ Progress: [==========] 97%
 - `client/src/components/SyncIndicator.tsx` - Connection status badge with popover, disconnect button, toast notifications
 - `client/src/components/QRCodeDisplay.tsx` - QR code rendering component using qrcode.react
 - `client/src/hooks/useCameraAvailability.ts` - Camera detection hook using enumerateDevices()
+- `client/src/components/QRScanner/QRScanner.tsx` - Camera-based QR scanner with custom overlay
+- `client/src/components/QRScanner/ScannerOverlay.tsx` - Cutout overlay with corner brackets
+- `client/src/components/QRScanner/useQRScanner.ts` - Html5Qrcode lifecycle management hook
 
 ## Session Continuity
 
-Last session: 2026-01-23T18:00:27Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-01-23T18:03:00Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
 
 ## Blockers
