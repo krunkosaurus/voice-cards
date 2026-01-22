@@ -9,11 +9,12 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
-import type { Card, Project } from '@/types';
+import type { Card, Project, TranscriptSegment } from '@/types';
 import type {
   ConnectionState,
   SyncProgress,
   SyncControlMessage,
+  SyncOperation,
   CardMetadata,
 } from '@/types/sync';
 import { useProject } from '@/contexts/ProjectContext';
@@ -23,6 +24,11 @@ import {
   gatherProjectForSync,
   commitReceivedProject,
   getAudioForCard,
+  applyRemoteCardCreate,
+  applyRemoteCardUpdate,
+  applyRemoteCardDelete,
+  applyRemoteCardReorder,
+  applyRemoteCardAudioChange,
 } from '@/services/sync/projectSync';
 import {
   createSyncRequest,
@@ -33,6 +39,7 @@ import {
   createSyncComplete,
   createSyncError,
   isSyncControlMessage,
+  isOperationMessage,
   calculateTotalChunks,
 } from '@/services/webrtc/syncProtocol';
 
@@ -54,6 +61,18 @@ interface PendingSyncRequest {
   project: Project;
   cards: CardMetadata[];
   totalAudioBytes: number;
+}
+
+/**
+ * Pending audio operation - metadata stored while awaiting binary transfer.
+ */
+interface PendingAudioOp {
+  metadata: {
+    duration: number;
+    waveformData?: number[];
+    transcript?: TranscriptSegment[];
+  };
+  receivedBlob: Blob | null;
 }
 
 /**
@@ -89,6 +108,11 @@ interface SyncContextValue {
   acceptSync: () => void;
   rejectSync: (reason: string) => void;
   commitSync: () => Promise<void>;
+
+  // Operation handling (for broadcast wrappers to check)
+  isApplyingRemoteRef: React.RefObject<boolean>;
+  getConnection: () => WebRTCConnectionService | null;
+  getAudioTransfer: () => AudioTransferService | null;
 }
 
 // =============================================================================
@@ -126,8 +150,8 @@ const SyncContext = createContext<SyncContextValue | undefined>(undefined);
 // =============================================================================
 
 export function SyncProvider({ children }: { children: React.ReactNode }) {
-  // Get dispatch from ProjectContext for reloading state after sync
-  const { dispatch } = useProject();
+  // Get state and dispatch from ProjectContext for syncing
+  const { state: projectState, dispatch } = useProject();
 
   // Sync state
   const [syncState, setSyncState] = useState<SyncState>(initialSyncState);
@@ -139,6 +163,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const audioTransferRef = useRef<AudioTransferService | null>(null);
   const userRoleRef = useRef<UserRole | null>(null);
   const hasInitialSyncedRef = useRef<boolean>(false);
+
+  // Operation handling refs and state
+  const isApplyingRemoteRef = useRef<boolean>(false);
+  const [pendingAudioOps, setPendingAudioOps] = useState<
+    Map<string, PendingAudioOp>
+  >(new Map());
 
   // ==========================================================================
   // Connection Management
@@ -161,7 +191,10 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             setConnectionState(state);
           },
           onControlMessage: (msg) => {
-            if (isSyncControlMessage(msg)) {
+            // Route operation messages first (real-time sync)
+            if (isOperationMessage(msg)) {
+              handleOperationMessage(msg as SyncOperation);
+            } else if (isSyncControlMessage(msg)) {
               handleSyncMessage(msg as SyncControlMessage);
             }
           },
@@ -229,35 +262,173 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   /**
+   * Handle incoming operation messages (real-time sync).
+   * Sets isApplyingRemoteRef to prevent re-broadcast loops.
+   */
+  const handleOperationMessage = useCallback(
+    async (op: SyncOperation) => {
+      console.log('[Sync] Received operation:', op.type);
+
+      isApplyingRemoteRef.current = true;
+      try {
+        switch (op.type) {
+          case 'op_card_create': {
+            // Create card in local state
+            const card = op.card;
+            dispatch({ type: 'ADD_CARD', payload: card });
+            // Persist to IndexedDB (audio arrives via binary transfer if audioSize > 0)
+            await applyRemoteCardCreate(card);
+            break;
+          }
+
+          case 'op_card_update': {
+            // Find existing card in ProjectContext state
+            const existingCard = projectState.cards.find(
+              (c) => c.id === op.cardId
+            );
+            if (!existingCard) {
+              console.warn('[Sync] op_card_update: card not found:', op.cardId);
+              break;
+            }
+            // Merge changes into existing card
+            const updatedCard: Card = {
+              ...existingCard,
+              ...op.changes,
+              updatedAt: new Date().toISOString(),
+            };
+            // Dispatch the full card to state
+            dispatch({ type: 'UPDATE_CARD', payload: updatedCard });
+            // Persist to IndexedDB
+            await applyRemoteCardUpdate(op.cardId, op.changes, existingCard);
+            break;
+          }
+
+          case 'op_card_delete': {
+            // Remove from local state
+            dispatch({ type: 'DELETE_CARD', payload: op.cardId });
+            // Persist to IndexedDB
+            await applyRemoteCardDelete(op.cardId);
+            break;
+          }
+
+          case 'op_card_reorder': {
+            // Apply reorder to current cards from ProjectContext
+            const currentCards = projectState.cards;
+            const reorderedCards = await applyRemoteCardReorder(
+              op.cardOrder,
+              currentCards
+            );
+            // Dispatch reordered cards to state
+            dispatch({ type: 'REORDER_CARDS', payload: reorderedCards });
+            break;
+          }
+
+          case 'op_card_audio_change': {
+            // Store in pendingAudioOps until binary data arrives
+            setPendingAudioOps((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(op.cardId, {
+                metadata: {
+                  duration: op.duration,
+                  waveformData: op.waveformData,
+                  transcript: op.transcript,
+                },
+                receivedBlob: null,
+              });
+              return newMap;
+            });
+            break;
+          }
+        }
+      } finally {
+        isApplyingRemoteRef.current = false;
+      }
+    },
+    [dispatch, projectState.cards]
+  );
+
+  /**
    * Handle incoming binary data (audio chunks).
    */
-  const handleBinaryMessage = useCallback((data: ArrayBuffer) => {
-    if (!audioTransferRef.current) return;
+  const handleBinaryMessage = useCallback(
+    async (data: ArrayBuffer) => {
+      if (!audioTransferRef.current) return;
 
-    const result = audioTransferRef.current.receiveChunk(data, (progress) => {
-      // Update progress for current card
-      setSyncState((prev) => ({
-        ...prev,
-        progress: {
-          ...prev.progress,
-          currentCardBytesTransferred: progress.bytesReceived,
-          currentCardBytesTotal: progress.bytesTotal,
-          totalBytesTransferred:
-            prev.progress.totalBytesTransferred +
-            (progress.bytesReceived - prev.progress.currentCardBytesTransferred),
-        },
-      }));
-    });
-
-    if (result?.complete && result.blob) {
-      // Store received audio blob
-      setSyncState((prev) => {
-        const newAudioMap = new Map(prev.receivedAudio);
-        newAudioMap.set(result.cardId, result.blob!);
-        return { ...prev, receivedAudio: newAudioMap };
+      const result = audioTransferRef.current.receiveChunk(data, (progress) => {
+        // Update progress for current card
+        setSyncState((prev) => ({
+          ...prev,
+          progress: {
+            ...prev.progress,
+            currentCardBytesTransferred: progress.bytesReceived,
+            currentCardBytesTotal: progress.bytesTotal,
+            totalBytesTransferred:
+              prev.progress.totalBytesTransferred +
+              (progress.bytesReceived - prev.progress.currentCardBytesTransferred),
+          },
+        }));
       });
-    }
-  }, []);
+
+      if (result?.complete && result.blob) {
+        const { cardId, blob } = result;
+
+        // Check if this audio is for a pending audio change operation
+        const pendingOp = pendingAudioOps.get(cardId);
+        if (pendingOp) {
+          // Apply the audio change operation now that we have the blob
+          isApplyingRemoteRef.current = true;
+          try {
+            // Find existing card in ProjectContext state
+            const existingCard = projectState.cards.find((c) => c.id === cardId);
+            if (existingCard) {
+              // Merge metadata into existing card
+              const updatedCard: Card = {
+                ...existingCard,
+                duration: pendingOp.metadata.duration,
+                waveformData: pendingOp.metadata.waveformData,
+                transcript: pendingOp.metadata.transcript,
+                updatedAt: new Date().toISOString(),
+              };
+              // Dispatch the full card to state
+              dispatch({ type: 'UPDATE_CARD', payload: updatedCard });
+              // Persist card and audio to IndexedDB
+              await applyRemoteCardAudioChange(
+                cardId,
+                pendingOp.metadata,
+                existingCard,
+                blob
+              );
+            } else {
+              // Card not found - just save the audio
+              console.warn(
+                '[Sync] op_card_audio_change: card not found:',
+                cardId
+              );
+              const { saveAudio } = await import('@/services/db');
+              await saveAudio(cardId, blob);
+            }
+
+            // Remove from pending ops
+            setPendingAudioOps((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(cardId);
+              return newMap;
+            });
+          } finally {
+            isApplyingRemoteRef.current = false;
+          }
+        } else {
+          // Normal initial sync flow - store received audio blob
+          setSyncState((prev) => {
+            const newAudioMap = new Map(prev.receivedAudio);
+            newAudioMap.set(cardId, blob);
+            return { ...prev, receivedAudio: newAudioMap };
+          });
+        }
+      }
+    },
+    [dispatch, pendingAudioOps, projectState.cards]
+  );
 
   // ==========================================================================
   // Sync Request Handling (Viewer receives from Editor)
@@ -708,6 +879,26 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   }, [connectionState, syncState.isSyncing, startSync]);
 
   // ==========================================================================
+  // Getters for broadcast wrappers
+  // ==========================================================================
+
+  /**
+   * Get the current WebRTC connection.
+   * For use by broadcast wrappers that need to send messages.
+   */
+  const getConnection = useCallback((): WebRTCConnectionService | null => {
+    return connectionRef.current;
+  }, []);
+
+  /**
+   * Get the current audio transfer service.
+   * For use by broadcast wrappers that need to send audio.
+   */
+  const getAudioTransfer = useCallback((): AudioTransferService | null => {
+    return audioTransferRef.current;
+  }, []);
+
+  // ==========================================================================
   // Context Value
   // ==========================================================================
 
@@ -720,6 +911,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     acceptSync,
     rejectSync,
     commitSync,
+    isApplyingRemoteRef,
+    getConnection,
+    getAudioTransfer,
   };
 
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>;
