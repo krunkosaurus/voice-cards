@@ -18,6 +18,7 @@ import { RecordingPanel } from '@/components/RecordingPanel';
 import { RecordingSetupModal } from '@/components/RecordingSetupModal';
 import { EditCardModal } from '@/components/EditCardModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { RoleRequestDialog } from '@/components/RoleRequestDialog';
 import { AudioTrimmer } from '@/components/AudioTrimmer';
 import { useMasterPlayer } from '@/hooks/useMasterPlayer';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -40,11 +41,11 @@ export default function Home() {
 
   // Use synced actions for card operations to broadcast to peer when connected
   const {
-    addCard: syncedAddCard,
     updateCard: syncedUpdateCard,
     deleteCard: syncedDeleteCard,
     reorderCards: syncedReorderCards,
     audioChange: syncedAudioChange,
+    broadcastCardCreate,
     rawDeleteCard,
   } = useSyncedActions();
   
@@ -86,7 +87,19 @@ export default function Home() {
   const webrtc = useWebRTC();
 
   // Sync context for P2P project sync
-  const { setConnection, setUserRole, syncState, connectionState, startSync, commitSync } = useSync();
+  const {
+    setConnection,
+    setUserRole,
+    syncState,
+    connectionState,
+    startSync,
+    commitSync,
+    canEdit,
+    roleTransferState,
+    requestRole,
+    grantRole,
+    denyRole,
+  } = useSync();
 
   // Wire WebRTC connection to SyncContext when connection established
   useEffect(() => {
@@ -96,6 +109,7 @@ export default function Home() {
       // Determine role: if we created the offer, we're the editor
       // If we accepted an offer (have answerCode), we're the viewer
       const role = webrtc.offerCode ? 'editor' : 'viewer';
+      console.log('[Home] Setting role:', role, 'offerCode:', webrtc.offerCode ? 'present' : 'null');
       setUserRole(role);
     } else if (webrtc.state === 'disconnected') {
       setConnection(null);
@@ -308,9 +322,11 @@ export default function Home() {
         }
       }
     },
+    canEdit,
   });
 
   const handleInsertAt = (position: number) => {
+    if (!canEdit) return; // Viewer cannot insert
     setInsertPosition(position);
     setRecordingMode('new');
     setTargetCardId(null);
@@ -352,17 +368,17 @@ export default function Home() {
         await saveCard(newCard);
         await saveAudio(newCard.id, blob);
 
-        // Insert at position
+        // Insert at position (or append to end)
         if (insertPosition !== null) {
           const newCards = [...state.cards];
           newCards.splice(insertPosition, 0, newCard);
           dispatch({ type: 'SET_CARDS', payload: newCards });
-          // Note: saveCards is handled by effect in ProjectContext with order values
-          // TODO: Broadcast insert-at-position to viewer (future enhancement)
         } else {
-          // Use synced action to broadcast to viewer if connected
-          await syncedAddCard(newCard, blob);
+          dispatch({ type: 'ADD_CARD', payload: newCard });
         }
+
+        // Broadcast to viewer if connected as editor (local state already updated above)
+        await broadcastCardCreate(newCard, blob);
 
         toast.success('Recording saved!');
 
@@ -437,6 +453,7 @@ export default function Home() {
   };
 
   const handleCardReRecord = (card: Card) => {
+    if (!canEdit) return; // Viewer cannot re-record
     setTargetCardId(card.id);
     setRecordingMode('re-record');
     setRecordingMetadata({
@@ -449,6 +466,7 @@ export default function Home() {
   };
 
   const handleCardAppend = (card: Card) => {
+    if (!canEdit) return; // Viewer cannot append
     setTargetCardId(card.id);
     setRecordingMode('append');
     setRecordingMetadata({
@@ -462,6 +480,7 @@ export default function Home() {
   };
 
   const handleCardDuplicate = async (card: Card) => {
+    if (!canEdit) return; // Viewer cannot duplicate
     try {
       const audioBlob = await import('@/services/db').then(m => m.getAudio(card.id));
       if (!audioBlob) {
@@ -495,6 +514,7 @@ export default function Home() {
   };
 
   const handleCardTrimSplit = (card: Card) => {
+    if (!canEdit) return; // Viewer cannot trim/split
     setTrimSplitCard(card);
   };
 
@@ -532,6 +552,7 @@ export default function Home() {
   };
 
   const handleTrim = async (startTime: number, endTime: number) => {
+    if (!canEdit) return; // Viewer cannot trim
     if (!trimSplitCard) return;
 
     try {
@@ -581,6 +602,7 @@ export default function Home() {
   };
 
   const handleSplit = async (splitTime: number) => {
+    if (!canEdit) return; // Viewer cannot split
     if (!trimSplitCard) return;
 
     try {
@@ -652,6 +674,7 @@ export default function Home() {
   };
 
   const handleCardAddSilenceStart = async (card: Card) => {
+    if (!canEdit) return; // Viewer cannot add silence
     try {
       // Create snapshot before modification
       const beforeSnapshot = await createSnapshot(state.cards, [card.id]);
@@ -699,6 +722,7 @@ export default function Home() {
   };
 
   const handleCardRemoveSilenceStart = async (card: Card) => {
+    if (!canEdit) return; // Viewer cannot remove silence
     try {
       const audioBlob = await import('@/services/db').then(m => m.getAudio(card.id));
       if (!audioBlob) {
@@ -753,6 +777,7 @@ export default function Home() {
   };
 
   const handleCardRemoveSilenceEnd = async (card: Card) => {
+    if (!canEdit) return; // Viewer cannot remove silence
     try {
       const audioBlob = await import('@/services/db').then(m => m.getAudio(card.id));
       if (!audioBlob) {
@@ -807,6 +832,7 @@ export default function Home() {
   };
 
   const handleCardAddSilenceEnd = async (card: Card) => {
+    if (!canEdit) return; // Viewer cannot add silence
     try {
       // Create snapshot before modification
       const beforeSnapshot = await createSnapshot(state.cards, [card.id]);
@@ -854,6 +880,7 @@ export default function Home() {
   };
 
   const handleCardDelete = (card: Card) => {
+    if (!canEdit) return; // Viewer cannot delete
     showConfirmDialog({
       title: 'Delete Card?',
       message: `Are you sure you want to delete "${card.label}"? You can undo this action.`,
@@ -924,6 +951,7 @@ export default function Home() {
   };
 
   const handleBatchDelete = () => {
+    if (!canEdit) return; // Viewer cannot delete
     if (selectedCardIds.size === 0) return;
 
     showConfirmDialog({
@@ -971,6 +999,7 @@ export default function Home() {
   };
 
   const handleMerge = async () => {
+    if (!canEdit) return; // Viewer cannot merge
     if (selectedCardIds.size < 2) {
       toast.error('Select at least 2 cards to merge');
       return;
@@ -1182,6 +1211,9 @@ export default function Home() {
         isEditor={syncState.role === 'editor'}
         isSyncing={syncState.isSyncing}
         onSyncNow={startSync}
+        role={syncState.role}
+        roleTransferState={roleTransferState}
+        onRequestRole={requestRole}
       />
 
       <main className="flex-1 pb-32">
@@ -1232,6 +1264,7 @@ export default function Home() {
             isSelectionMode={isSelectionMode}
             selectedCardIds={selectedCardIds}
             onToggleCardSelection={handleToggleCardSelection}
+            canEdit={canEdit}
           />
         </div>
       </main>
@@ -1301,6 +1334,13 @@ export default function Home() {
           onCancel={hideConfirmDialog}
         />
       )}
+
+      {/* Role request approval dialog for editor */}
+      <RoleRequestDialog
+        isOpen={roleTransferState.status === 'pending_approval'}
+        onGrant={grantRole}
+        onDeny={() => denyRole()}
+      />
 
       <AudioTrimmer
         isOpen={!!trimSplitCard}
