@@ -8,6 +8,7 @@ import React, {
   useRef,
   useCallback,
   useEffect,
+  useMemo,
 } from 'react';
 import type { Card, Project, TranscriptSegment } from '@/types';
 import type {
@@ -221,8 +222,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             setConnectionState(state);
           },
           onControlMessage: (msg) => {
-            // Route operation messages first (real-time sync)
-            if (isOperationMessage(msg)) {
+            // Route role messages first (role transfer protocol)
+            if (isRoleMessage(msg)) {
+              handleRoleMessage(msg as RoleMessage);
+            } else if (isOperationMessage(msg)) {
+              // Route operation messages (real-time sync)
               handleOperationMessage(msg as SyncOperation);
             } else if (isSyncControlMessage(msg)) {
               handleSyncMessage(msg as SyncControlMessage);
@@ -243,6 +247,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         setConnectionState('disconnected');
         // Reset initial sync flag when disconnected
         hasInitialSyncedRef.current = false;
+        // Reset role transfer state on disconnect
+        setSyncState((prev) => ({
+          ...prev,
+          roleTransferState: { status: 'idle' },
+        }));
       }
     },
     []
@@ -938,6 +947,167 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   }, [connectionState, syncState.isSyncing, startSync]);
 
   // ==========================================================================
+  // Role Transfer (ROLE-02, ROLE-03, ROLE-05)
+  // ==========================================================================
+
+  /**
+   * Computed editing permission.
+   * - Not connected = can edit (local only mode)
+   * - During role transfer = nobody edits (ROLE-05)
+   * - Only editor can edit when connected
+   */
+  const canEdit = useMemo(() => {
+    // Not connected = can edit (local only mode)
+    if (connectionState !== 'connected') return true;
+    // During role transfer = nobody edits
+    if (syncState.roleTransferState.status === 'transferring') return false;
+    // Only editor can edit
+    return syncState.role === 'editor';
+  }, [connectionState, syncState.roleTransferState.status, syncState.role]);
+
+  /**
+   * Request editor role from current editor.
+   * Viewer calls this to initiate role transfer.
+   */
+  const requestRole = useCallback((reason?: string) => {
+    if (!connectionRef.current?.isReady() || syncState.role !== 'viewer') {
+      return;
+    }
+
+    console.log('[Sync] Requesting editor role');
+
+    // Update state to pending_request
+    setSyncState((prev) => ({
+      ...prev,
+      roleTransferState: { status: 'pending_request' },
+    }));
+
+    // Send request to editor
+    connectionRef.current.sendControl(createRoleRequest(reason));
+  }, [syncState.role]);
+
+  /**
+   * Grant editor role to viewer.
+   * Editor calls this to approve role request.
+   */
+  const grantRole = useCallback(() => {
+    if (!connectionRef.current?.isReady() || syncState.role !== 'editor') {
+      return;
+    }
+
+    console.log('[Sync] Granting editor role');
+
+    // Enter transferring state (ROLE-05: pause editing)
+    setSyncState((prev) => ({
+      ...prev,
+      roleTransferState: { status: 'transferring' },
+    }));
+
+    // Send grant to viewer
+    connectionRef.current.sendControl(createRoleGrant());
+
+    // Swap roles locally: we become viewer
+    userRoleRef.current = 'viewer';
+    setSyncState((prev) => ({
+      ...prev,
+      role: 'viewer',
+      roleTransferState: { status: 'idle' },
+    }));
+  }, [syncState.role]);
+
+  /**
+   * Deny role request from viewer.
+   * Editor calls this to reject role request.
+   */
+  const denyRole = useCallback((reason?: string) => {
+    if (!connectionRef.current?.isReady() || syncState.role !== 'editor') {
+      return;
+    }
+
+    console.log('[Sync] Denying role request:', reason);
+
+    // Clear pending approval state
+    setSyncState((prev) => ({
+      ...prev,
+      roleTransferState: { status: 'idle' },
+    }));
+
+    // Send denial to viewer
+    connectionRef.current.sendControl(createRoleDeny(reason));
+  }, [syncState.role]);
+
+  /**
+   * Handle incoming role messages.
+   */
+  const handleRoleMessage = useCallback((msg: RoleMessage) => {
+    console.log('[Sync] Received role message:', msg.type);
+
+    switch (msg.type) {
+      case 'role_request':
+        // Editor receives request from viewer
+        if (syncState.role === 'editor') {
+          setSyncState((prev) => ({
+            ...prev,
+            roleTransferState: { status: 'pending_approval' },
+          }));
+        }
+        break;
+
+      case 'role_grant':
+        // Viewer receives grant from editor
+        if (syncState.role === 'viewer') {
+          console.log('[Sync] Role granted - becoming editor');
+
+          // Enter transferring state briefly (ROLE-05)
+          setSyncState((prev) => ({
+            ...prev,
+            roleTransferState: { status: 'transferring' },
+          }));
+
+          // Swap roles: we become editor
+          userRoleRef.current = 'editor';
+          setSyncState((prev) => ({
+            ...prev,
+            role: 'editor',
+            roleTransferState: { status: 'idle' },
+          }));
+
+          // Send transfer complete to old editor
+          connectionRef.current?.sendControl(createRoleTransferComplete());
+        }
+        break;
+
+      case 'role_deny':
+        // Viewer receives denial from editor
+        if (syncState.role === 'viewer') {
+          setSyncState((prev) => ({
+            ...prev,
+            roleTransferState: { status: 'denied', reason: msg.reason },
+          }));
+
+          // Clear denied state after 3 seconds
+          setTimeout(() => {
+            setSyncState((prev) => {
+              if (prev.roleTransferState.status === 'denied') {
+                return { ...prev, roleTransferState: { status: 'idle' } };
+              }
+              return prev;
+            });
+          }, 3000);
+        }
+        break;
+
+      case 'role_transfer_complete':
+        // Old editor receives confirmation from new editor
+        setSyncState((prev) => ({
+          ...prev,
+          roleTransferState: { status: 'idle' },
+        }));
+        break;
+    }
+  }, [syncState.role]);
+
+  // ==========================================================================
   // Getters for broadcast wrappers
   // ==========================================================================
 
@@ -973,6 +1143,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     isApplyingRemoteRef,
     getConnection,
     getAudioTransfer,
+    // Role transfer (ROLE-02, ROLE-03, ROLE-05)
+    canEdit,
+    roleTransferState: syncState.roleTransferState,
+    requestRole,
+    grantRole,
+    denyRole,
   };
 
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>;
