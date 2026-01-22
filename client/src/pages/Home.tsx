@@ -6,6 +6,7 @@ import { useProject } from '@/contexts/ProjectContext';
 import { useHistory } from '@/contexts/HistoryContext';
 import { createSnapshot } from '@/contexts/HistoryContext';
 import { useSync } from '@/contexts/SyncContext';
+import { useSyncedActions } from '@/hooks/useSyncedActions';
 import { Header } from '@/components/Header';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
@@ -34,8 +35,18 @@ import type { Card, TranscriptSegment } from '@/types';
 type RecordingMode = 'new' | 're-record' | 'append';
 
 export default function Home() {
-  const { state, dispatch, addCard, updateCard, deleteCard: removeCard, reorderCards, showConfirmDialog, hideConfirmDialog, clearProject, toggleTranscripts } = useProject();
+  const { state, dispatch, showConfirmDialog, hideConfirmDialog, clearProject, toggleTranscripts } = useProject();
   const { recordAction, canUndo, canRedo, undo, redo } = useHistory();
+
+  // Use synced actions for card operations to broadcast to peer when connected
+  const {
+    addCard: syncedAddCard,
+    updateCard: syncedUpdateCard,
+    deleteCard: syncedDeleteCard,
+    reorderCards: syncedReorderCards,
+    audioChange: syncedAudioChange,
+    rawDeleteCard,
+  } = useSyncedActions();
   
   // Filter cards based on search query
   const filteredCards = useMemo(() => {
@@ -347,8 +358,10 @@ export default function Home() {
           newCards.splice(insertPosition, 0, newCard);
           dispatch({ type: 'SET_CARDS', payload: newCards });
           // Note: saveCards is handled by effect in ProjectContext with order values
+          // TODO: Broadcast insert-at-position to viewer (future enhancement)
         } else {
-          addCard(newCard);
+          // Use synced action to broadcast to viewer if connected
+          await syncedAddCard(newCard, blob);
         }
 
         toast.success('Recording saved!');
@@ -362,7 +375,7 @@ export default function Home() {
           // Generate new waveform from new audio
           const { generateWaveformData } = await import('@/services/waveformGenerator');
           const waveformData = await generateWaveformData(blob);
-          
+
           const updatedCard = {
             ...card,
             label: recordingMetadata?.label || card.label,
@@ -375,7 +388,8 @@ export default function Home() {
           };
           await saveCard(updatedCard);
           await saveAudio(targetCardId, blob);
-          updateCard(updatedCard);
+          // Use synced audio change to broadcast to viewer if connected
+          await syncedAudioChange(targetCardId, updatedCard, blob);
           toast.success('Recording updated!');
         }
       } else if (recordingMode === 'append' && targetCardId) {
@@ -386,11 +400,11 @@ export default function Home() {
           if (existingBlob) {
             const mergedBlob = await appendAudioBlobs(existingBlob, blob);
             const newDuration = await getAudioDuration(mergedBlob);
-            
+
             // Generate new waveform from merged audio
             const { generateWaveformData } = await import('@/services/waveformGenerator');
             const waveformData = await generateWaveformData(mergedBlob);
-            
+
             const updatedCard = {
               ...card,
               label: recordingMetadata?.label || card.label,
@@ -403,7 +417,8 @@ export default function Home() {
             };
             await saveCard(updatedCard);
             await saveAudio(targetCardId, mergedBlob);
-            updateCard(updatedCard);
+            // Use synced audio change to broadcast to viewer if connected
+            await syncedAudioChange(targetCardId, updatedCard, mergedBlob);
             toast.success('Audio appended!');
           }
         }
@@ -484,7 +499,8 @@ export default function Home() {
   };
 
   const handleCardTitleUpdate = (updatedCard: Card) => {
-    updateCard(updatedCard);
+    // Use synced action to broadcast to viewer if connected
+    syncedUpdateCard(updatedCard);
   };
 
   const handleTranscriptGenerated = async (cardId: string, transcript: TranscriptSegment[]) => {
@@ -498,7 +514,8 @@ export default function Home() {
     };
 
     await saveCard(updatedCard);
-    updateCard(updatedCard);
+    // Use synced action to broadcast to viewer if connected
+    syncedUpdateCard(updatedCard);
     toast.success('Transcript generated!');
   };
 
@@ -540,7 +557,8 @@ export default function Home() {
 
       await saveCard(updatedCard);
       await saveAudio(trimSplitCard.id, trimmedBlob);
-      updateCard(updatedCard);
+      // Use synced audio change to broadcast to viewer if connected
+      await syncedAudioChange(trimSplitCard.id, updatedCard, trimmedBlob);
 
       // Create snapshot after trim
       const updatedCards = state.cards.map(c => c.id === updatedCard.id ? updatedCard : c);
@@ -657,7 +675,8 @@ export default function Home() {
 
       await saveCard(updatedCard);
       await saveAudio(card.id, modifiedBlob);
-      updateCard(updatedCard);
+      // Use synced audio change to broadcast to viewer if connected
+      await syncedAudioChange(card.id, updatedCard, modifiedBlob);
 
       // Create snapshot after modification
       const afterCards = state.cards.map(c => c.id === card.id ? updatedCard : c);
@@ -709,7 +728,8 @@ export default function Home() {
 
       await saveCard(updatedCard);
       await saveAudio(card.id, modifiedBlob);
-      updateCard(updatedCard);
+      // Use synced audio change to broadcast to viewer if connected
+      await syncedAudioChange(card.id, updatedCard, modifiedBlob);
 
       // Create snapshot after modification
       const afterCards = state.cards.map(c => c.id === card.id ? updatedCard : c);
@@ -762,7 +782,8 @@ export default function Home() {
 
       await saveCard(updatedCard);
       await saveAudio(card.id, modifiedBlob);
-      updateCard(updatedCard);
+      // Use synced audio change to broadcast to viewer if connected
+      await syncedAudioChange(card.id, updatedCard, modifiedBlob);
 
       // Create snapshot after modification
       const afterCards = state.cards.map(c => c.id === card.id ? updatedCard : c);
@@ -809,7 +830,8 @@ export default function Home() {
 
       await saveCard(updatedCard);
       await saveAudio(card.id, modifiedBlob);
-      updateCard(updatedCard);
+      // Use synced audio change to broadcast to viewer if connected
+      await syncedAudioChange(card.id, updatedCard, modifiedBlob);
 
       // Create snapshot after modification
       const afterCards = state.cards.map(c => c.id === card.id ? updatedCard : c);
@@ -842,8 +864,10 @@ export default function Home() {
           // Create snapshot before delete
           const beforeSnapshot = await createSnapshot(state.cards, [card.id]);
 
+          // Delete from IndexedDB (db service)
           await deleteCard(card.id);
-          removeCard(card.id);
+          // Use synced action to broadcast to viewer if connected
+          syncedDeleteCard(card.id);
 
           // Create snapshot after delete
           const afterCards = state.cards.filter(c => c.id !== card.id);
@@ -916,8 +940,10 @@ export default function Home() {
           // Delete all selected cards
           const cardIdsArray = Array.from(selectedCardIds);
           for (const cardId of cardIdsArray) {
+            // Delete from IndexedDB (db service)
             await deleteCard(cardId);
-            removeCard(cardId);
+            // Use synced action to broadcast to viewer if connected
+            syncedDeleteCard(cardId);
           }
 
           // Create snapshot after delete
@@ -994,12 +1020,14 @@ export default function Home() {
 
       await saveCard(updatedCard);
       await saveAudio(firstCard.id, mergedBlob);
-      updateCard(updatedCard);
+      // Use synced audio change to broadcast merged audio to viewer
+      await syncedAudioChange(firstCard.id, updatedCard, mergedBlob);
 
       // Delete other cards
       for (let i = 1; i < selectedCards.length; i++) {
         await deleteCard(selectedCards[i].id);
-        removeCard(selectedCards[i].id);
+        // Use synced action to broadcast deletion to viewer
+        syncedDeleteCard(selectedCards[i].id);
       }
 
       // Create snapshot after merge
@@ -1184,7 +1212,7 @@ export default function Home() {
             individualPlaybackProgress={playbackProgress}
             masterPlaybackProgress={currentCardProgress}
             transcriptsEnabled={state.settings.transcriptsEnabled}
-            onReorder={reorderCards}
+            onReorder={syncedReorderCards}
             onCardPlay={handleIndividualCardPlay}
             onCardPause={handleIndividualCardPause}
             onCardSeek={handleCardSeek}
@@ -1245,7 +1273,8 @@ export default function Home() {
         onClose={() => setEditingCard(null)}
         onSave={(updatedCard) => {
           saveCard(updatedCard);
-          updateCard(updatedCard);
+          // Use synced action to broadcast to viewer if connected
+          syncedUpdateCard(updatedCard);
           setEditingCard(null);
           toast.success('Card updated');
         }}
