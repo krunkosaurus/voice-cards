@@ -80,31 +80,31 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONN-01 | 1 - WebRTC Connection | Pending |
-| CONN-02 | 1 - WebRTC Connection | Pending |
-| CONN-03 | 1 - WebRTC Connection | Pending |
-| CONN-04 | 1 - WebRTC Connection | Pending |
-| CONN-05 | 1 - WebRTC Connection | Pending |
+| CONN-01 | 1 - WebRTC Connection | Complete |
+| CONN-02 | 1 - WebRTC Connection | Complete |
+| CONN-03 | 1 - WebRTC Connection | Complete |
+| CONN-04 | 1 - WebRTC Connection | Complete |
+| CONN-05 | 1 - WebRTC Connection | Complete |
 | CONN-06 | 6 - QR Code Support | Pending |
-| CONN-07 | 5 - Connection Polish | Pending |
-| CONN-08 | 5 - Connection Polish | Pending |
-| XFER-01 | 2 - Initial Sync | Pending |
-| XFER-02 | 2 - Initial Sync | Pending |
-| XFER-03 | 2 - Initial Sync | Pending |
-| XFER-04 | 2 - Initial Sync | Pending |
-| XFER-05 | 2 - Initial Sync | Pending |
-| SYNC-01 | 3 - Real-Time Sync | Pending |
-| SYNC-02 | 3 - Real-Time Sync | Pending |
-| SYNC-03 | 3 - Real-Time Sync | Pending |
-| SYNC-04 | 3 - Real-Time Sync | Pending |
-| SYNC-05 | 3 - Real-Time Sync | Pending |
+| CONN-07 | 5 - Connection Polish | Complete |
+| CONN-08 | 5 - Connection Polish | Complete |
+| XFER-01 | 2 - Initial Sync | Complete |
+| XFER-02 | 2 - Initial Sync | Complete |
+| XFER-03 | 2 - Initial Sync | Complete |
+| XFER-04 | 2 - Initial Sync | Complete |
+| XFER-05 | 2 - Initial Sync | Complete |
+| SYNC-01 | 3 - Real-Time Sync | Complete |
+| SYNC-02 | 3 - Real-Time Sync | Complete |
+| SYNC-03 | 3 - Real-Time Sync | Complete |
+| SYNC-04 | 3 - Real-Time Sync | Complete |
+| SYNC-05 | 3 - Real-Time Sync | Complete |
 | ROLE-01 | 4 - Editor Role System | Complete |
 | ROLE-02 | 4 - Editor Role System | Complete |
 | ROLE-03 | 4 - Editor Role System | Complete |
 | ROLE-04 | 4 - Editor Role System | Complete |
 | ROLE-05 | 4 - Editor Role System | Complete |
-| PRES-01 | 5 - Connection Polish | Pending |
-| PRES-02 | 5 - Connection Polish | Pending |
+| PRES-01 | 5 - Connection Polish | Complete |
+| PRES-02 | 5 - Connection Polish | Complete |
 
 **Coverage:**
 - v1 requirements: 25 total
@@ -113,4 +113,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-01-22*
-*Last updated: 2026-01-22 after phase 4 completion*
+*Last updated: 2026-01-23 after phase 5 completion*

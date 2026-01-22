@@ -161,10 +161,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Heartbeat and disconnect message types (extend sync.ts, syncProtocol.ts)
-- [ ] 05-02-PLAN.md — Heartbeat service in WebRTCConnectionService (ping/pong, timeout detection)
-- [ ] 05-03-PLAN.md — Reconnection state machine in SyncContext (backoff, peer disconnect handling)
-- [ ] 05-04-PLAN.md — Enhanced SyncIndicator (popover, disconnect button, toast notifications)
+- [x] 05-01-PLAN.md — Heartbeat and disconnect message types (extend sync.ts, syncProtocol.ts)
+- [x] 05-02-PLAN.md — Heartbeat service in WebRTCConnectionService (ping/pong, timeout detection)
+- [x] 05-03-PLAN.md — Reconnection state machine in SyncContext (backoff, peer disconnect handling)
+- [x] 05-04-PLAN.md — Enhanced SyncIndicator (popover, disconnect button, toast notifications)
 
 **Deliverables:**
 - Connection health monitoring with heartbeat ping/pong (5s interval, 15s timeout)
@@ -177,10 +177,10 @@ Plans:
 **Note:** Due to manual SDP exchange architecture, automatic ICE restart isn't feasible. When connection drops, users are notified and must start a new session. This is documented in 05-RESEARCH.md.
 
 **Success Criteria:**
-- [ ] User is notified when connection drops and can start new session (CONN-07)
-- [ ] User can click "Disconnect" to cleanly end the session (CONN-08)
-- [ ] User sees indicator showing peer is connected (PRES-01)
-- [ ] User sees notification when connection is lost (PRES-02)
+- [x] User is notified when connection drops and can start new session (CONN-07)
+- [x] User can click "Disconnect" to cleanly end the session (CONN-08)
+- [x] User sees indicator showing peer is connected (PRES-01)
+- [x] User sees notification when connection is lost (PRES-02)
 
 ---
 
@@ -214,8 +214,8 @@ Plans:
 | CONN-04 | 1 | Complete |
 | CONN-05 | 1 | Complete |
 | CONN-06 | 6 | Pending |
-| CONN-07 | 5 | Pending |
-| CONN-08 | 5 | Pending |
+| CONN-07 | 5 | Complete |
+| CONN-08 | 5 | Complete |
 | XFER-01 | 2 | Complete |
 | XFER-02 | 2 | Complete |
 | XFER-03 | 2 | Complete |
@@ -231,8 +231,8 @@ Plans:
 | ROLE-03 | 4 | Complete |
 | ROLE-04 | 4 | Complete |
 | ROLE-05 | 4 | Complete |
-| PRES-01 | 5 | Pending |
-| PRES-02 | 5 | Pending |
+| PRES-01 | 5 | Complete |
+| PRES-02 | 5 | Complete |
 
 **Coverage:** 25/25 requirements mapped
 
@@ -274,3 +274,4 @@ Phase 1: WebRTC Connection
 *Phase 4 planned: 2026-01-22*
 *Phase 4 executed: 2026-01-22*
 *Phase 5 planned: 2026-01-23*
+*Phase 5 executed: 2026-01-23*
