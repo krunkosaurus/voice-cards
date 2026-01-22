@@ -1,6 +1,6 @@
 # Milestone State: v1 P2P Sync
 
-**Current Phase:** 1
+**Current Phase:** 2
 **Phase Status:** In Progress
 **Updated:** 2026-01-22
 
@@ -8,24 +8,24 @@
 
 | Phase | Name | Status | Requirements |
 |-------|------|--------|--------------|
-| 1 | WebRTC Connection | In Progress | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
-| 2 | Initial Sync | Not Started | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
+| 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
+| 2 | Initial Sync | In Progress (1/3 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Not Started | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Not Started | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
-**Overall:** 0/6 phases complete (Phase 1: 2/3 plans complete)
+**Overall:** 1/6 phases complete (Phase 2: 1/3 plans complete)
 
-Progress: [===.......] 20%
+Progress: [====......] 40%
 
 ## Current Focus
 
-**Phase 1: WebRTC Connection**
-- Status: In Progress (Plan 2 of 3 complete)
-- Goal: Users can establish a P2P connection by exchanging codes manually
-- Last Completed: 01-02-PLAN.md (WebRTC Connection Service)
-- Next Action: Execute 01-03-PLAN.md (Connection UI)
+**Phase 2: Initial Sync**
+- Status: In Progress (Plan 1 of 3 complete)
+- Goal: Editor can send full project to viewer on connection
+- Last Completed: 02-01-PLAN.md (Sync Protocol Types)
+- Next Action: Execute 02-02-PLAN.md (Sync Sender)
 
 ## Key Decisions
 
@@ -43,6 +43,9 @@ Progress: [===.......] 20%
 | ICE timeout resolves (not rejects) | Allows partial candidate list rather than failing | 2026-01-22 |
 | Wait for BOTH DataChannels | Only 'connected' when controlReady && binaryReady | 2026-01-22 |
 | Safari Blob compatibility | Convert Blob to ArrayBuffer in binary handler | 2026-01-22 |
+| Little-endian binary headers | Consistent cross-platform chunk encoding | 2026-01-22 |
+| 8-byte chunk header | cardIndex (4B) + chunkIndex (4B) for routing | 2026-01-22 |
+| MessageWithoutMeta pattern | Caller adds timestamp/id for flexibility | 2026-01-22 |
 
 ## Technical Context
 
@@ -60,14 +63,15 @@ Progress: [===.......] 20%
 5. Safari quirks - Promise-based API only, test early
 
 **Key files created:**
-- `client/src/types/sync.ts` - ConnectionState, SDPCodecResult types
+- `client/src/types/sync.ts` - ConnectionState, SDPCodecResult, sync protocol message types
 - `client/src/services/webrtc/sdpCodec.ts` - encodeSDP, decodeSDP functions
 - `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class
+- `client/src/services/webrtc/syncProtocol.ts` - Message creators, binary chunk utilities
 
 ## Session Continuity
 
-Last session: 2026-01-22T10:33:50Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-01-22T11:20:34Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -76,14 +80,13 @@ None currently.
 
 ## Notes
 
-Phase 1 Plan 2 complete. WebRTCConnectionService implements full offer/answer lifecycle.
-- createOffer() generates encoded offer with all ICE candidates
-- acceptOffer() decodes offer and generates answer
-- acceptAnswer() completes handshake
-- Dual DataChannels (control + binary) tracked separately
-- State machine: disconnected -> creating_offer -> awaiting_answer -> connecting -> connected
+Phase 2 Plan 1 complete. Sync protocol types and utilities established.
+- SyncControlMessage union type enables type-safe message routing
+- Binary chunk encoding: 8-byte header (cardIndex + chunkIndex, LE) + data
+- calculateTotalChunks(audioSize) for chunk planning
+- isSyncControlMessage type guard for control channel dispatch
 
-Ready for Plan 3: Connection UI components.
+Ready for Plan 2: Sync sender implementation.
 
 ---
 
