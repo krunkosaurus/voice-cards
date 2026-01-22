@@ -29,6 +29,13 @@
 
 **Depends on:** None
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Types & SDP codec (lz-string compression)
+- [ ] 01-02-PLAN.md — WebRTCConnectionService (RTCPeerConnection lifecycle, dual DataChannels)
+- [ ] 01-03-PLAN.md — Connection hook & UI (useWebRTC, ConnectionDialog, SyncIndicator, Header integration)
+
 **Deliverables:**
 - WebRTCConnectionService with RTCPeerConnection lifecycle management
 - SDP codec (compression with lz-string, encoding, validation)
@@ -229,3 +236,4 @@ Phase 1: WebRTC Connection
 ---
 
 *Roadmap created: 2026-01-22*
+*Phase 1 planned: 2026-01-22*
