@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
-**Current Phase:** 5
-**Phase Status:** Complete (4/4 plans)
+**Current Phase:** 6
+**Phase Status:** In Progress (1/? plans)
 **Updated:** 2026-01-23
 
 ## Progress
@@ -13,20 +13,18 @@
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Verified | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Complete (4/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
-| 6 | QR Code Support | Not Started | CONN-06 |
+| 6 | QR Code Support | In Progress (1/?) | CONN-06 |
 
 **Overall:** 5/6 phases complete
 
-Progress: [==========] 96%
+Progress: [==========] 97%
 
 ## Current Focus
 
-**Phase 5: Connection Polish - COMPLETE**
-- Status: 4/4 plans complete (05-01, 05-02, 05-03, 05-04)
-- Goal: Connection health monitoring, graceful disconnect, and UI polish
-- All requirements fulfilled: CONN-07, CONN-08, PRES-01, PRES-02
-
-**Next:** Phase 6 (QR Code Support) if needed, or milestone complete.
+**Phase 6: QR Code Support - IN PROGRESS**
+- Status: 1/? plans complete (06-01)
+- Goal: QR code generation and scanning for easier SDP exchange
+- Plan 06-01 complete: QR libraries installed, QRCodeDisplay component, useCameraAvailability hook
 
 ## Key Decisions
 
@@ -93,6 +91,8 @@ Progress: [==========] 96%
 | onOfflineClick prop for SyncIndicator | Allows Header to open ConnectionDialog when clicking badge while disconnected | 2026-01-23 |
 | Popover conditional display | Only shows popover when connected or had connection (failed/peer_disconnected) | 2026-01-23 |
 | gracefulDisconnect from context | SyncIndicator calls context directly, no prop drilling | 2026-01-23 |
+| QR size 192px with level M | Good balance for ~1000 char SDP codes | 2026-01-23 |
+| enumerateDevices() for camera detection | No permission prompt required | 2026-01-23 |
 
 ## Technical Context
 
@@ -123,11 +123,13 @@ Progress: [==========] 96%
 - `client/src/components/RoleBadge.tsx` - Role indicator badge with clickable viewer state
 - `client/src/components/RoleRequestDialog.tsx` - Dialog for editor to approve/deny role requests
 - `client/src/components/SyncIndicator.tsx` - Connection status badge with popover, disconnect button, toast notifications
+- `client/src/components/QRCodeDisplay.tsx` - QR code rendering component using qrcode.react
+- `client/src/hooks/useCameraAvailability.ts` - Camera detection hook using enumerateDevices()
 
 ## Session Continuity
 
-Last session: 2026-01-23T17:15:00Z
-Stopped at: Completed 05-04-PLAN.md (Phase 5 complete)
+Last session: 2026-01-23T18:00:27Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -135,6 +137,12 @@ Resume file: None
 None currently.
 
 ## Notes
+
+**Plan 06-01:** QR Foundation (COMPLETE)
+- Installed qrcode.react and html5-qrcode libraries
+- Created QRCodeDisplay component (192px, level M error correction)
+- Created useCameraAvailability hook using enumerateDevices()
+- Ready for integration into ConnectionDialog
 
 **Plan 05-04:** Connection status UI polish (COMPLETE)
 - Reconnecting state with orange styling and spinning RefreshCw icon
@@ -199,4 +207,4 @@ Bugs found and fixed during testing:
 ---
 
 *State initialized: 2026-01-22*
-*Last updated: 2026-01-23*
+*Last updated: 2026-01-23 18:00Z*
