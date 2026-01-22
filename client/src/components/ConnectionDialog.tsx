@@ -164,7 +164,7 @@ export function ConnectionDialog({
               {/* QR code is primary */}
               {offerCode && (
                 <div className="p-4 bg-white rounded-lg">
-                  <QRCodeDisplay code={offerCode} size={192} />
+                  <QRCodeDisplay code={offerCode} size={256} />
                 </div>
               )}
 
@@ -280,7 +280,7 @@ export function ConnectionDialog({
               {/* QR code is primary */}
               {answerCode && (
                 <div className="p-4 bg-white rounded-lg">
-                  <QRCodeDisplay code={answerCode} size={192} />
+                  <QRCodeDisplay code={answerCode} size={256} />
                 </div>
               )}
 
