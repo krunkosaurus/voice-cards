@@ -3,7 +3,9 @@
 
 import { Mic, Sun, Moon, MoreVertical, Download, Upload, Trash2, Search, X, Undo2, Redo2, RefreshCw } from 'lucide-react';
 import { SyncIndicator } from './SyncIndicator';
+import { RoleBadge } from './RoleBadge';
 import type { ConnectionState } from '@/types/sync';
+import type { UserRole } from '@/contexts/SyncContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
@@ -32,9 +34,16 @@ interface HeaderProps {
   isEditor?: boolean;
   isSyncing?: boolean;
   onSyncNow?: () => void;
+  // Role display props
+  role?: UserRole | null;
+  roleTransferState?: {
+    status: 'idle' | 'pending_request' | 'pending_approval' | 'transferring' | 'denied';
+    reason?: string;
+  };
+  onRequestRole?: () => void;
 }
 
-export function Header({ searchQuery, onSearchChange, onExport, onImport, onClearProject, onExportAudio, canUndo, canRedo, onUndo, onRedo, connectionState, onConnectClick, isEditor, isSyncing, onSyncNow }: HeaderProps) {
+export function Header({ searchQuery, onSearchChange, onExport, onImport, onClearProject, onExportAudio, canUndo, canRedo, onUndo, onRedo, connectionState, onConnectClick, isEditor, isSyncing, onSyncNow, role, roleTransferState, onRequestRole }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -73,6 +82,16 @@ export function Header({ searchQuery, onSearchChange, onExport, onImport, onClea
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Role indicator - only show when connected */}
+            {role && roleTransferState && (
+              <RoleBadge
+                role={role}
+                connectionState={connectionState}
+                roleTransferState={roleTransferState}
+                onRequestRole={onRequestRole}
+              />
+            )}
+
             {/* Sync indicator */}
             <SyncIndicator state={connectionState} onClick={onConnectClick} />
 
