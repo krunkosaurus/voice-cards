@@ -93,7 +93,7 @@ export function Header({ searchQuery, onSearchChange, onExport, onImport, onClea
             )}
 
             {/* Sync indicator */}
-            <SyncIndicator state={connectionState} onClick={onConnectClick} />
+            <SyncIndicator state={connectionState} onOfflineClick={onConnectClick} />
 
             {/* Undo/Redo buttons */}
             {onUndo && (
