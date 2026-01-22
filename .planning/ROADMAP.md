@@ -192,6 +192,13 @@ Plans:
 
 **Depends on:** Phase 1 (connection codes exist)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Install QR libraries, QRCodeDisplay component, useCameraAvailability hook
+- [ ] 06-02-PLAN.md — QRScanner component with custom cutout overlay
+- [ ] 06-03-PLAN.md — Integrate QR display and scanner into ConnectionDialog
+
 **Deliverables:**
 - QR code generation from SDP offer code
 - QR code scanner component using device camera
@@ -275,3 +282,4 @@ Phase 1: WebRTC Connection
 *Phase 4 executed: 2026-01-22*
 *Phase 5 planned: 2026-01-23*
 *Phase 5 executed: 2026-01-23*
+*Phase 6 planned: 2026-01-23*
