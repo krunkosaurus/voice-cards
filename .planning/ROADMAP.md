@@ -64,10 +64,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Sync protocol types and message utilities
-- [ ] 02-02-PLAN.md — AudioTransferService with chunking and backpressure
-- [ ] 02-03-PLAN.md — SyncContext and projectSync utilities
-- [ ] 02-04-PLAN.md — Sync UI components (progress, dialogs, integration)
+- [x] 02-01-PLAN.md — Sync protocol types and message utilities
+- [x] 02-02-PLAN.md — AudioTransferService with chunking and backpressure
+- [x] 02-03-PLAN.md — SyncContext and projectSync utilities
+- [x] 02-04-PLAN.md — Sync UI components (progress, dialogs, integration)
 
 **Deliverables:**
 - SyncContext wrapping ProjectContext for sync-aware state
@@ -78,11 +78,11 @@ Plans:
 - Sync completion notification
 
 **Success Criteria:**
-- [ ] When connected, editor's full project transfers to viewer automatically (XFER-01)
-- [ ] Viewer sees progress bar with cards transferred and percentage (XFER-02)
-- [ ] Viewer sees confirmation toast when sync completes (XFER-03)
-- [ ] Viewer sees warning dialog before their existing project is overwritten (XFER-04)
-- [ ] Audio files transfer correctly, can be played back on receiver (XFER-05)
+- [x] When connected, editor's full project transfers to viewer automatically (XFER-01)
+- [x] Viewer sees progress bar with cards transferred and percentage (XFER-02)
+- [x] Viewer sees confirmation toast when sync completes (XFER-03)
+- [x] Viewer sees warning dialog before their existing project is overwritten (XFER-04)
+- [x] Audio files transfer correctly, can be played back on receiver (XFER-05)
 
 ---
 
@@ -94,12 +94,18 @@ Plans:
 
 **Depends on:** Phase 2 (initial sync establishes baseline)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Operation types and message creators (extend sync.ts and syncProtocol.ts)
+- [ ] 03-02-PLAN.md — Operation handlers in SyncContext (receive and apply remote operations)
+- [ ] 03-03-PLAN.md — Broadcast wrappers (intercept local actions, broadcast to peer)
+
 **Deliverables:**
 - Sync-aware action wrappers (addCard, updateCard, deleteCard, reorderCards)
 - Operation broadcast when connected and isEditor
 - Remote operation application to local reducer
-- Operation deduplication with UUID tracking (idempotent)
-- Sync indicator showing live sync status
+- Operation deduplication with origin-based tracking (isApplyingRemoteRef)
 - Audio change sync (re-record, trim)
 
 **Success Criteria:**
@@ -193,11 +199,11 @@ Plans:
 | CONN-06 | 6 | Pending |
 | CONN-07 | 5 | Pending |
 | CONN-08 | 5 | Pending |
-| XFER-01 | 2 | Pending |
-| XFER-02 | 2 | Pending |
-| XFER-03 | 2 | Pending |
-| XFER-04 | 2 | Pending |
-| XFER-05 | 2 | Pending |
+| XFER-01 | 2 | Complete |
+| XFER-02 | 2 | Complete |
+| XFER-03 | 2 | Complete |
+| XFER-04 | 2 | Complete |
+| XFER-05 | 2 | Complete |
 | SYNC-01 | 3 | Pending |
 | SYNC-02 | 3 | Pending |
 | SYNC-03 | 3 | Pending |
@@ -246,3 +252,4 @@ Phase 1: WebRTC Connection
 *Roadmap created: 2026-01-22*
 *Phase 1 planned: 2026-01-22*
 *Phase 2 planned: 2026-01-22*
+*Phase 3 planned: 2026-01-22*
