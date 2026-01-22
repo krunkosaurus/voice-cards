@@ -186,7 +186,11 @@ export type SyncControlMessage =
   | CardUpdateOperation
   | CardDeleteOperation
   | CardReorderOperation
-  | CardAudioChangeOperation;
+  | CardAudioChangeOperation
+  | RoleRequestMessage
+  | RoleGrantMessage
+  | RoleDenyMessage
+  | RoleTransferCompleteMessage;
 
 // =============================================================================
 // Real-Time Sync Operation Types (SYNC-01 through SYNC-05)
@@ -256,6 +260,53 @@ export type SyncOperation =
   | CardDeleteOperation
   | CardReorderOperation
   | CardAudioChangeOperation;
+
+// =============================================================================
+// Role Transfer Protocol Message Types (ROLE-01 through ROLE-05)
+// =============================================================================
+
+/**
+ * Viewer requests editor role from current editor.
+ * ROLE-02: Viewer can request editor role.
+ */
+export interface RoleRequestMessage extends ControlMessage {
+  type: 'role_request';
+  reason?: string; // Optional: "I need to make edits"
+}
+
+/**
+ * Editor grants editor role to viewer.
+ * ROLE-03: Editor can approve request.
+ */
+export interface RoleGrantMessage extends ControlMessage {
+  type: 'role_grant';
+}
+
+/**
+ * Editor denies role request.
+ * ROLE-03: Editor can deny request.
+ */
+export interface RoleDenyMessage extends ControlMessage {
+  type: 'role_deny';
+  reason?: string; // Optional: "Still editing"
+}
+
+/**
+ * Sent by old editor after role swap completes to confirm transfer.
+ * ROLE-05: Signals editing can resume after brief pause.
+ */
+export interface RoleTransferCompleteMessage extends ControlMessage {
+  type: 'role_transfer_complete';
+}
+
+/**
+ * Union type of all role transfer messages.
+ */
+export type RoleMessage =
+  | RoleRequestMessage
+  | RoleGrantMessage
+  | RoleDenyMessage
+  | RoleTransferCompleteMessage;
 
 /**
  * Sync transfer progress tracking.
