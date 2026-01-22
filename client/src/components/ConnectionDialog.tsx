@@ -65,9 +65,13 @@ export function ConnectionDialog({
       setStep('connected');
       setIsLoading(false);
     } else if (state === 'connecting') {
-      setStep('connecting');
+      // Don't transition away from 'show-answer' - responder needs to share the code
+      // The connection will complete automatically once the initiator applies the answer
+      if (step !== 'show-answer') {
+        setStep('connecting');
+      }
     }
-  }, [state]);
+  }, [state, step]);
 
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
