@@ -1,8 +1,8 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 5
-**Phase Status:** In Progress (1/4 plans complete)
-**Updated:** 2026-01-22
+**Phase Status:** In Progress (2/4 plans complete)
+**Updated:** 2026-01-23
 
 ## Progress
 
@@ -12,7 +12,7 @@
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Verified | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
-| 5 | Connection Polish | In Progress (1/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
+| 5 | Connection Polish | In Progress (2/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
 **Overall:** 4/6 phases complete
@@ -22,10 +22,10 @@ Progress: [=========.] 90%
 ## Current Focus
 
 **Phase 5: Connection Polish - IN PROGRESS**
-- Status: 1/4 plans complete (05-01)
+- Status: 2/4 plans complete (05-01, 05-02)
 - Goal: Connection health monitoring, graceful disconnect, and UI polish
-- Completed: Heartbeat and disconnect message types (05-01)
-- Next Action: Execute 05-02 (HeartbeatManager service)
+- Completed: Heartbeat types (05-01), Heartbeat service (05-02)
+- Next Action: Execute 05-03 (SyncContext heartbeat integration)
 
 ## Key Decisions
 
@@ -83,6 +83,9 @@ Progress: [=========.] 90%
 | sentAt in heartbeat ping/pong | Simple RTT calculation by echoing ping's sentAt in pong | 2026-01-22 |
 | Disconnect reason discriminant | 'user_initiated' vs 'error' for clear routing logic | 2026-01-22 |
 | HeartbeatMessage union type | Combined type guard for both ping and pong | 2026-01-22 |
+| 5s heartbeat, 15s timeout | 3 missed pings = stale connection detection | 2026-01-23 |
+| Heartbeat handled at connection layer | Not passed to onControlMessage, handled internally | 2026-01-23 |
+| 100ms delay before close | Ensures disconnect message transmitted before channel closes | 2026-01-23 |
 
 ## Technical Context
 
@@ -115,8 +118,8 @@ Progress: [=========.] 90%
 
 ## Session Continuity
 
-Last session: 2026-01-22T16:56:19Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-01-23T17:05:00Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -124,6 +127,14 @@ Resume file: None
 None currently.
 
 ## Notes
+
+**Plan 05-02:** Heartbeat service and graceful disconnect (COMPLETE)
+- startHeartbeat() / stopHeartbeat() methods for connection health monitoring
+- Heartbeat pings every 5s, timeout after 15s (3 missed pongs)
+- gracefulDisconnect() sends disconnect message and waits 100ms before closing
+- onHeartbeatTimeout callback fired when heartbeat times out
+- onPeerDisconnect callback fired when peer sends disconnect message
+- Heartbeat messages handled internally, not passed to external handlers
 
 **Plan 05-01:** Heartbeat protocol types (COMPLETE)
 - HeartbeatPing, HeartbeatPong interfaces with sentAt timestamp
@@ -216,4 +227,4 @@ Bugs found and fixed during testing:
 ---
 
 *State initialized: 2026-01-22*
-*Last updated: 2026-01-22*
+*Last updated: 2026-01-23*
