@@ -10,6 +10,7 @@ interface KeyboardShortcuts {
   onUndo?: () => void;
   onRedo?: () => void;
   onJumpToCard?: (index: number) => void;
+  canEdit?: boolean;
 }
 
 export function useKeyboardShortcuts({
@@ -21,6 +22,7 @@ export function useKeyboardShortcuts({
   onUndo,
   onRedo,
   onJumpToCard,
+  canEdit = true,
 }: KeyboardShortcuts) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -46,14 +48,16 @@ export function useKeyboardShortcuts({
         onPlayPause();
       }
 
-      // R - Record
+      // R - Record (editing action - requires canEdit)
       if (e.code === 'KeyR' && !e.ctrlKey && !e.metaKey && onRecord) {
+        if (!canEdit) return; // Viewer cannot record
         e.preventDefault();
         onRecord();
       }
 
-      // E - Edit (first/selected card)
+      // E - Edit (first/selected card) (editing action - requires canEdit)
       if (e.code === 'KeyE' && !e.ctrlKey && !e.metaKey && onEdit) {
+        if (!canEdit) return; // Viewer cannot edit
         e.preventDefault();
         onEdit();
       }
@@ -70,18 +74,20 @@ export function useKeyboardShortcuts({
         onSeekBackward();
       }
 
-      // Ctrl+Z or Cmd+Z - Undo
+      // Ctrl+Z or Cmd+Z - Undo (editing action - requires canEdit)
       if (e.code === 'KeyZ' && (e.ctrlKey || e.metaKey) && !e.shiftKey && onUndo) {
+        if (!canEdit) return; // Viewer cannot undo
         e.preventDefault();
         onUndo();
       }
 
-      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y - Redo
+      // Ctrl+Shift+Z or Cmd+Shift+Z or Ctrl+Y - Redo (editing action - requires canEdit)
       if (
         ((e.code === 'KeyZ' && (e.ctrlKey || e.metaKey) && e.shiftKey) ||
         (e.code === 'KeyY' && (e.ctrlKey || e.metaKey))) &&
         onRedo
       ) {
+        if (!canEdit) return; // Viewer cannot redo
         e.preventDefault();
         onRedo();
       }
@@ -96,5 +102,5 @@ export function useKeyboardShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onPlayPause, onRecord, onSeekForward, onSeekBackward, onEdit, onUndo, onRedo, onJumpToCard]);
+  }, [onPlayPause, onRecord, onSeekForward, onSeekBackward, onEdit, onUndo, onRedo, onJumpToCard, canEdit]);
 }
