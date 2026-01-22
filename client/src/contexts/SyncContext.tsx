@@ -40,8 +40,14 @@ import {
   createSyncError,
   isSyncControlMessage,
   isOperationMessage,
+  isRoleMessage,
+  createRoleRequest,
+  createRoleGrant,
+  createRoleDeny,
+  createRoleTransferComplete,
   calculateTotalChunks,
 } from '@/services/webrtc/syncProtocol';
+import type { RoleMessage } from '@/types/sync';
 
 // =============================================================================
 // Types
@@ -53,6 +59,17 @@ import {
  * - viewer: Receives data, read-only copy
  */
 export type UserRole = 'editor' | 'viewer';
+
+/**
+ * Role transfer request lifecycle state.
+ * Tracks the async role request/grant/deny flow.
+ */
+type RoleTransferState =
+  | { status: 'idle' }
+  | { status: 'pending_request' }       // Viewer: waiting for editor response
+  | { status: 'pending_approval' }      // Editor: has pending request from viewer
+  | { status: 'transferring' }          // Brief pause during role handoff
+  | { status: 'denied'; reason?: string };  // Viewer: request was denied
 
 /**
  * Pending sync request from editor (viewer sees this).
@@ -87,6 +104,8 @@ interface SyncState {
   receivedProject: Project | null;
   receivedCards: Card[];
   receivedAudio: Map<string, Blob>;
+  // Role transfer state (ROLE-02, ROLE-03, ROLE-05)
+  roleTransferState: RoleTransferState;
 }
 
 /**
@@ -113,6 +132,13 @@ interface SyncContextValue {
   isApplyingRemoteRef: React.RefObject<boolean>;
   getConnection: () => WebRTCConnectionService | null;
   getAudioTransfer: () => AudioTransferService | null;
+
+  // Role transfer (ROLE-02, ROLE-03, ROLE-05)
+  canEdit: boolean;
+  roleTransferState: RoleTransferState;
+  requestRole: (reason?: string) => void;
+  grantRole: () => void;
+  denyRole: (reason?: string) => void;
 }
 
 // =============================================================================
@@ -137,6 +163,7 @@ const initialSyncState: SyncState = {
   receivedProject: null,
   receivedCards: [],
   receivedAudio: new Map(),
+  roleTransferState: { status: 'idle' },
 };
 
 // =============================================================================
@@ -169,6 +196,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const [pendingAudioOps, setPendingAudioOps] = useState<
     Map<string, PendingAudioOp>
   >(new Map());
+  // Track cards created via op_card_create that are waiting for audio
+  // Store full card data to avoid stale closure issues
+  const pendingCardCreatesRef = useRef<Map<string, Card>>(new Map());
 
   // ==========================================================================
   // Connection Management
@@ -196,6 +226,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
               handleOperationMessage(msg as SyncOperation);
             } else if (isSyncControlMessage(msg)) {
               handleSyncMessage(msg as SyncControlMessage);
+            } else {
+              console.warn('[Sync] Unknown message type:', msg.type);
             }
           },
           onBinaryMessage: (data) => {
@@ -205,9 +237,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
         // CRITICAL: Set current state immediately since connection may already be connected
         // The callback above only fires on FUTURE state changes
-        const currentState = conn.getState();
-        console.log('[Sync] setConnection called, current state:', currentState);
-        setConnectionState(currentState);
+        setConnectionState(conn.getState());
       } else {
         audioTransferRef.current = null;
         setConnectionState('disconnected');
@@ -267,14 +297,19 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
    */
   const handleOperationMessage = useCallback(
     async (op: SyncOperation) => {
-      console.log('[Sync] Received operation:', op.type);
-
       isApplyingRemoteRef.current = true;
       try {
         switch (op.type) {
           case 'op_card_create': {
             // Create card in local state
             const card = op.card;
+
+            // IMPORTANT: Track pending audio BEFORE any async operations
+            // Binary chunks may arrive while we're awaiting below
+            if (op.audioSize > 0) {
+              pendingCardCreatesRef.current.set(card.id, card);
+            }
+
             dispatch({ type: 'ADD_CARD', payload: card });
             // Persist to IndexedDB (audio arrives via binary transfer if audioSize > 0)
             await applyRemoteCardCreate(card);
@@ -417,6 +452,30 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           } finally {
             isApplyingRemoteRef.current = false;
           }
+        } else if (pendingCardCreatesRef.current.has(cardId)) {
+          // Real-time card create - save audio directly to IndexedDB
+          const { saveAudio } = await import('@/services/db');
+          await saveAudio(cardId, blob);
+
+          // Get the stored card data (avoids stale closure issue)
+          const pendingCard = pendingCardCreatesRef.current.get(cardId);
+          pendingCardCreatesRef.current.delete(cardId);
+
+          // Trigger UI update by touching the card's updatedAt timestamp
+          // This forces WaveformThumbnail to re-mount and load the audio
+          if (pendingCard) {
+            dispatch({
+              type: 'UPDATE_CARD',
+              payload: { ...pendingCard, updatedAt: new Date().toISOString() },
+            });
+          }
+
+          // Reset sync progress (real-time ops don't have sync_complete message)
+          setSyncState((prev) => ({
+            ...prev,
+            isSyncing: false,
+            progress: { ...initialProgress, phase: 'idle' },
+          }));
         } else {
           // Normal initial sync flow - store received audio blob
           setSyncState((prev) => {
