@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 2
-**Phase Status:** Complete
+**Phase Status:** Complete (4/4 plans)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -9,7 +9,7 @@
 | Phase | Name | Status | Requirements |
 |-------|------|--------|--------------|
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
-| 2 | Initial Sync | Complete (3/3 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
+| 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Not Started | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Not Started | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
@@ -22,10 +22,10 @@ Progress: [======....] 60%
 ## Current Focus
 
 **Phase 2: Initial Sync - COMPLETE**
-- Status: Complete (3/3 plans done)
+- Status: Complete (4/4 plans done)
 - Goal: Editor can send full project to viewer on connection
-- Last Completed: 02-03-PLAN.md (Sync Receiver / SyncContext)
-- Next Action: Begin Phase 3 (Real-Time Sync) or integration testing
+- Last Completed: 02-04-PLAN.md (Sync UI Components)
+- Next Action: Human verification of end-to-end sync flow
 
 ## Key Decisions
 
@@ -52,6 +52,9 @@ Progress: [======....] 60%
 | 500ms auto-sync delay | Stability delay after connection before auto-starting sync | 2026-01-22 |
 | Receiver accumulates before commit | Data stored in state, then explicitly committed via commitSync | 2026-01-22 |
 | INIT_STATE dispatch for reload | After IndexedDB commit, dispatch to ProjectContext reloads UI | 2026-01-22 |
+| Role detection based on offer vs answer | If user created offer (has offerCode), they are editor. If they accepted offer, they are viewer. | 2026-01-22 |
+| Auto-commit on viewer after sync_complete | Viewer should see synced project immediately without manual action | 2026-01-22 |
+| Sync wiring in Home.tsx not Header.tsx | Home.tsx already manages WebRTC hook state, keeps wiring co-located | 2026-01-22 |
 
 ## Technical Context
 
@@ -76,11 +79,13 @@ Progress: [======....] 60%
 - `client/src/services/sync/AudioTransferService.ts` - Chunked audio send/receive with progress callbacks
 - `client/src/services/sync/projectSync.ts` - Project serialization/deserialization for sync
 - `client/src/contexts/SyncContext.tsx` - Sync state management and orchestration
+- `client/src/components/SyncProgress.tsx` - Progress bar during sync transfer (XFER-02)
+- `client/src/components/OverwriteConfirmDialog.tsx` - Warning dialog before overwrite (XFER-04)
 
 ## Session Continuity
 
-Last session: 2026-01-22T11:29:33Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-01-22T12:15:00Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -89,19 +94,23 @@ None currently.
 
 ## Notes
 
-Phase 2 complete. Initial sync infrastructure established.
+Phase 2 complete. Initial sync UI and infrastructure established.
 
 **Plan 02-01:** Sync types and protocol message creators
 **Plan 02-02:** AudioTransferService with chunked send/receive and backpressure
 **Plan 02-03:** SyncContext with sender/receiver flows and auto-sync (XFER-01)
+**Plan 02-04:** Sync UI components (SyncProgress, OverwriteConfirmDialog, provider integration)
 
 Key capabilities now available:
 - SyncContext orchestrates sync lifecycle
-- Editor auto-syncs full project when connection established
-- Viewer receives project/cards/audio, can accept/reject/commit
+- Editor auto-syncs full project when connection established (XFER-01)
+- Progress bar shows during transfer (XFER-02)
+- Toast notification on completion (XFER-03)
+- Warning dialog before overwriting viewer's project (XFER-04)
+- Manual "Sync Now" button for editor re-sync
 - commitSync writes to IndexedDB and reloads ProjectContext
 
-Ready for Phase 3 (Real-Time Sync) or UI integration.
+Awaiting human verification of end-to-end sync flow.
 
 ---
 
