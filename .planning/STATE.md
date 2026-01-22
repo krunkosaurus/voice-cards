@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 5
-**Phase Status:** In Progress (2/4 plans complete)
+**Phase Status:** In Progress (3/4 plans complete)
 **Updated:** 2026-01-23
 
 ## Progress
@@ -12,20 +12,20 @@
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Verified | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
-| 5 | Connection Polish | In Progress (2/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
+| 5 | Connection Polish | In Progress (3/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
 **Overall:** 4/6 phases complete
 
-Progress: [=========.] 90%
+Progress: [=========.] 92%
 
 ## Current Focus
 
 **Phase 5: Connection Polish - IN PROGRESS**
-- Status: 2/4 plans complete (05-01, 05-02)
+- Status: 3/4 plans complete (05-01, 05-02, 05-03)
 - Goal: Connection health monitoring, graceful disconnect, and UI polish
-- Completed: Heartbeat types (05-01), Heartbeat service (05-02)
-- Next Action: Execute 05-03 (SyncContext heartbeat integration)
+- Completed: Heartbeat types (05-01), Heartbeat service (05-02), SyncContext heartbeat integration (05-03)
+- Next Action: Execute 05-04 (connection status UI polish)
 
 ## Key Decisions
 
@@ -86,6 +86,9 @@ Progress: [=========.] 90%
 | 5s heartbeat, 15s timeout | 3 missed pings = stale connection detection | 2026-01-23 |
 | Heartbeat handled at connection layer | Not passed to onControlMessage, handled internally | 2026-01-23 |
 | 100ms delay before close | Ensures disconnect message transmitted before channel closes | 2026-01-23 |
+| 2s RECONNECT_DETECT_DELAY | Brief window to detect if connection self-recovers before showing failed | 2026-01-23 |
+| No auto-reconnect | Due to manual SDP exchange, automatic ICE restart isn't feasible | 2026-01-23 |
+| Peer disconnect skips reconnecting | Intentional disconnect goes directly to peer_disconnected state | 2026-01-23 |
 
 ## Technical Context
 
@@ -105,11 +108,11 @@ Progress: [=========.] 90%
 **Key files created:**
 - `client/src/types/sync.ts` - ConnectionState, SDPCodecResult, sync protocol message types, operation types
 - `client/src/services/webrtc/sdpCodec.ts` - encodeSDP, decodeSDP functions
-- `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class (with backpressure methods)
+- `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class (with backpressure methods, heartbeat)
 - `client/src/services/webrtc/syncProtocol.ts` - Message creators, binary chunk utilities, operation creators
 - `client/src/services/sync/AudioTransferService.ts` - Chunked audio send/receive with progress callbacks
 - `client/src/services/sync/projectSync.ts` - Project serialization/deserialization for sync, apply functions
-- `client/src/contexts/SyncContext.tsx` - Sync state management, orchestration, operation handlers, role transfer
+- `client/src/contexts/SyncContext.tsx` - Sync state management, orchestration, operation handlers, role transfer, reconnection state
 - `client/src/components/SyncProgress.tsx` - Progress bar during sync transfer (XFER-02)
 - `client/src/components/OverwriteConfirmDialog.tsx` - Warning dialog before overwrite (XFER-04)
 - `client/src/hooks/useSyncedActions.ts` - Hook wrapping ProjectContext actions with broadcast logic
@@ -118,8 +121,8 @@ Progress: [=========.] 90%
 
 ## Session Continuity
 
-Last session: 2026-01-23T17:05:00Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-01-23T17:06:50Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -127,6 +130,15 @@ Resume file: None
 None currently.
 
 ## Notes
+
+**Plan 05-03:** SyncContext heartbeat integration (COMPLETE)
+- ReconnectionState type (idle/reconnecting/failed/peer_disconnected)
+- connectedAt timestamp for connection duration tracking
+- Heartbeat wiring: startHeartbeat on 'connected', stopHeartbeat on disconnect/error
+- handleHeartbeatTimeout: brief 'reconnecting' state (2s) then 'failed'
+- handlePeerDisconnect: direct transition to 'peer_disconnected'
+- gracefulDisconnect for user-initiated disconnect
+- resetReconnectionState for "Try again" functionality
 
 **Plan 05-02:** Heartbeat service and graceful disconnect (COMPLETE)
 - startHeartbeat() / stopHeartbeat() methods for connection health monitoring
@@ -208,6 +220,7 @@ Key capabilities now available:
 - Audio changes include full chunk protocol
 - Role transfer state machine ready for UI components
 - UI editing restrictions enforced for viewers
+- Reconnection state machine for connection loss detection
 
 **Phase 3 Complete:** All 3 plans executed successfully
 - Operation types and message creators (03-01)
