@@ -18,6 +18,11 @@ import {
   CardReorderOperation,
   CardAudioChangeOperation,
   SyncOperation,
+  RoleRequestMessage,
+  RoleGrantMessage,
+  RoleDenyMessage,
+  RoleTransferCompleteMessage,
+  RoleMessage,
 } from '@/types/sync';
 import { Card, Project, TranscriptSegment } from '@/types';
 
@@ -67,6 +72,17 @@ export const OPERATION_MESSAGE_TYPES = [
   'op_card_delete',
   'op_card_reorder',
   'op_card_audio_change',
+] as const;
+
+/**
+ * Role message type strings for role transfer protocol.
+ * Used by isRoleMessage type guard.
+ */
+export const ROLE_MESSAGE_TYPES = [
+  'role_request',
+  'role_grant',
+  'role_deny',
+  'role_transfer_complete',
 ] as const;
 
 // =============================================================================
@@ -421,4 +437,75 @@ export function createCardAudioChangeOp(
     transcript,
     audioSize,
   };
+}
+
+// =============================================================================
+// Role Message Creators
+// =============================================================================
+
+/**
+ * Create a role_request message.
+ * Viewer sends this to request editor role.
+ *
+ * @param reason - Optional reason for request
+ */
+export function createRoleRequest(
+  reason?: string
+): MessageWithoutMeta<RoleRequestMessage> {
+  return {
+    type: 'role_request',
+    reason,
+  };
+}
+
+/**
+ * Create a role_grant message.
+ * Editor sends this to grant role to viewer.
+ */
+export function createRoleGrant(): MessageWithoutMeta<RoleGrantMessage> {
+  return {
+    type: 'role_grant',
+  };
+}
+
+/**
+ * Create a role_deny message.
+ * Editor sends this to deny role request.
+ *
+ * @param reason - Optional reason for denial
+ */
+export function createRoleDeny(
+  reason?: string
+): MessageWithoutMeta<RoleDenyMessage> {
+  return {
+    type: 'role_deny',
+    reason,
+  };
+}
+
+/**
+ * Create a role_transfer_complete message.
+ * New editor sends this after confirming role swap.
+ */
+export function createRoleTransferComplete(): MessageWithoutMeta<RoleTransferCompleteMessage> {
+  return {
+    type: 'role_transfer_complete',
+  };
+}
+
+// =============================================================================
+// Role Message Type Guard
+// =============================================================================
+
+/**
+ * Type guard to check if a ControlMessage is a RoleMessage.
+ * Enables routing of role transfer protocol messages.
+ *
+ * @param msg - Any control message
+ * @returns true if msg is a RoleMessage
+ */
+export function isRoleMessage(
+  msg: ControlMessage
+): msg is RoleMessage {
+  return ROLE_MESSAGE_TYPES.includes(msg.type as typeof ROLE_MESSAGE_TYPES[number]);
 }
