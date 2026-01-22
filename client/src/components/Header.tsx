@@ -2,6 +2,8 @@
 /* Design: Warm Analog Tape Aesthetic - Warm header with microphone icon */
 
 import { Mic, Sun, Moon, MoreVertical, Download, Upload, Trash2, Search, X, Undo2, Redo2 } from 'lucide-react';
+import { SyncIndicator } from './SyncIndicator';
+import type { ConnectionState } from '@/types/sync';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import {
@@ -24,9 +26,11 @@ interface HeaderProps {
   canRedo?: boolean;
   onUndo?: () => void;
   onRedo?: () => void;
+  connectionState: ConnectionState;
+  onConnectClick: () => void;
 }
 
-export function Header({ searchQuery, onSearchChange, onExport, onImport, onClearProject, onExportAudio, canUndo, canRedo, onUndo, onRedo }: HeaderProps) {
+export function Header({ searchQuery, onSearchChange, onExport, onImport, onClearProject, onExportAudio, canUndo, canRedo, onUndo, onRedo, connectionState, onConnectClick }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -65,6 +69,9 @@ export function Header({ searchQuery, onSearchChange, onExport, onImport, onClea
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* Sync indicator */}
+            <SyncIndicator state={connectionState} onClick={onConnectClick} />
+
             {/* Undo/Redo buttons */}
             {onUndo && (
               <Button
