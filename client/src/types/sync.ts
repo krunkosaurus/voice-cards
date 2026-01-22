@@ -171,7 +171,7 @@ export interface SyncErrorMessage extends ControlMessage {
 }
 
 /**
- * Union type of all sync control messages.
+ * Union type of all sync control messages (initial sync protocol).
  * Enables type narrowing based on message.type discriminant.
  */
 export type SyncControlMessage =
@@ -181,7 +181,81 @@ export type SyncControlMessage =
   | ChunkStartMessage
   | ChunkCompleteMessage
   | SyncCompleteMessage
-  | SyncErrorMessage;
+  | SyncErrorMessage
+  | CardCreateOperation
+  | CardUpdateOperation
+  | CardDeleteOperation
+  | CardReorderOperation
+  | CardAudioChangeOperation;
+
+// =============================================================================
+// Real-Time Sync Operation Types (SYNC-01 through SYNC-05)
+// =============================================================================
+
+/**
+ * Operation: Create a new card.
+ * Editor broadcasts when a new card is created.
+ * audioSize > 0 triggers binary transfer of audio data.
+ */
+export interface CardCreateOperation extends ControlMessage {
+  type: 'op_card_create';
+  card: Card;
+  audioSize: number;
+}
+
+/**
+ * Operation: Update card metadata (non-audio fields).
+ * Editor broadcasts when card label, notes, tags, or color changes.
+ */
+export interface CardUpdateOperation extends ControlMessage {
+  type: 'op_card_update';
+  cardId: string;
+  changes: Partial<Pick<Card, 'label' | 'notes' | 'tags' | 'color'>>;
+}
+
+/**
+ * Operation: Delete a card.
+ * Editor broadcasts when a card is deleted.
+ */
+export interface CardDeleteOperation extends ControlMessage {
+  type: 'op_card_delete';
+  cardId: string;
+}
+
+/**
+ * Operation: Reorder cards.
+ * Editor broadcasts when card order changes (drag-drop, etc.).
+ * Contains only IDs and new order values for efficiency.
+ */
+export interface CardReorderOperation extends ControlMessage {
+  type: 'op_card_reorder';
+  cardOrder: Array<{ id: string; order: number }>;
+}
+
+/**
+ * Operation: Audio change on existing card (re-record, append, etc.).
+ * Editor broadcasts when card audio is modified.
+ * audioSize > 0 triggers binary transfer of new audio data.
+ */
+export interface CardAudioChangeOperation extends ControlMessage {
+  type: 'op_card_audio_change';
+  cardId: string;
+  duration: number;
+  waveformData?: number[];
+  transcript?: Card['transcript'];
+  audioSize: number;
+}
+
+/**
+ * Union type of all real-time sync operations.
+ * Used for type narrowing in operation handlers.
+ */
+export type SyncOperation =
+  | CardCreateOperation
+  | CardUpdateOperation
+  | CardDeleteOperation
+  | CardReorderOperation
+  | CardAudioChangeOperation;
 
 /**
  * Sync transfer progress tracking.
