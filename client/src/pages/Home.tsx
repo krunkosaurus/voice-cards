@@ -289,6 +289,11 @@ export default function Home() {
     try {
       if (recordingMode === 'new') {
         // Create new card with metadata
+        // Determine order based on insertion position or append to end
+        const order = insertPosition !== null
+          ? insertPosition
+          : state.cards.length;
+
         const newCard: Card = {
           id: uuid(),
           label: recordingMetadata?.label || 'Untitled',
@@ -298,6 +303,7 @@ export default function Home() {
           duration,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          order,
         };
 
         await saveCard(newCard);

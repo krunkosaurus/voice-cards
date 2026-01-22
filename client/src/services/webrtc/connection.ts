@@ -411,6 +411,63 @@ export class WebRTCConnectionService {
     }
   }
 
+  // ============================================================
+  // Backpressure control for large binary transfers
+  // ============================================================
+
+  /**
+   * Get the current buffered amount for the binary channel.
+   * Used to check buffer state before sending chunks.
+   *
+   * @returns Current bufferedAmount or 0 if channel doesn't exist
+   */
+  getBinaryBufferedAmount(): number {
+    return this.binaryChannel?.bufferedAmount ?? 0;
+  }
+
+  /**
+   * Set the bufferedAmountLowThreshold for the binary channel.
+   * When bufferedAmount drops below this value, 'bufferedamountlow' event fires.
+   *
+   * @param threshold - Threshold in bytes (typically 64KB)
+   */
+  setBinaryBufferedAmountLowThreshold(threshold: number): void {
+    if (this.binaryChannel) {
+      this.binaryChannel.bufferedAmountLowThreshold = threshold;
+    }
+  }
+
+  /**
+   * Wait for the binary channel buffer to drain below threshold.
+   * Call this before each chunk send to prevent buffer overflow.
+   *
+   * The threshold should typically be 64KB (BUFFER_THRESHOLD from syncProtocol).
+   * Callers should await this before each chunk send during large transfers.
+   *
+   * @param threshold - Drain threshold in bytes (default 64KB)
+   * @returns Promise that resolves when buffer is below threshold
+   */
+  waitForBinaryBufferDrain(threshold: number = 64 * 1024): Promise<void> {
+    return new Promise((resolve) => {
+      // No channel or already below threshold - resolve immediately
+      if (!this.binaryChannel || this.binaryChannel.bufferedAmount <= threshold) {
+        resolve();
+        return;
+      }
+
+      // Set the threshold
+      this.binaryChannel.bufferedAmountLowThreshold = threshold;
+
+      // One-time event listener that removes itself after firing
+      const onBufferLow = () => {
+        this.binaryChannel?.removeEventListener('bufferedamountlow', onBufferLow);
+        resolve();
+      };
+
+      this.binaryChannel.addEventListener('bufferedamountlow', onBufferLow);
+    });
+  }
+
   /**
    * Get debug information about the current connection state.
    * Useful for troubleshooting connection issues.
