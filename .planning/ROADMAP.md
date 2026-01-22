@@ -158,6 +158,14 @@ Plans:
 
 **Depends on:** Phase 1 (connection layer exists)
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Heartbeat and disconnect message types (extend sync.ts, syncProtocol.ts)
+- [ ] 05-02-PLAN.md — Heartbeat service in WebRTCConnectionService (ping/pong, timeout detection)
+- [ ] 05-03-PLAN.md — Reconnection state machine in SyncContext (backoff, peer disconnect handling)
+- [ ] 05-04-PLAN.md — Enhanced SyncIndicator (popover, disconnect button, toast notifications)
+
 **Deliverables:**
 - ICE restart on disconnection (not full peer connection recreation)
 - Connection health monitoring with heartbeat ping/pong (5s interval)
@@ -264,3 +272,4 @@ Phase 1: WebRTC Connection
 *Phase 3 executed: 2026-01-22*
 *Phase 4 planned: 2026-01-22*
 *Phase 4 executed: 2026-01-22*
+*Phase 5 planned: 2026-01-23*
