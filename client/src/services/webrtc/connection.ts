@@ -8,9 +8,19 @@ import type {
   ConnectionConfig,
   ControlMessage,
   SDPCodecResult,
+  HeartbeatPing,
+  HeartbeatMessage,
+  DisconnectMessage,
 } from '@/types/sync';
 import { DEFAULT_CONNECTION_CONFIG } from '@/types/sync';
 import { encodeSDP, decodeSDP } from '@/services/webrtc/sdpCodec';
+import {
+  createHeartbeatPing,
+  createHeartbeatPong,
+  isHeartbeatMessage,
+  createDisconnect,
+  isDisconnectMessage,
+} from '@/services/webrtc/syncProtocol';
 
 /**
  * Callbacks for connection events.
@@ -19,6 +29,8 @@ export interface ConnectionCallbacks {
   onStateChange?: (state: ConnectionState) => void;
   onControlMessage?: (msg: ControlMessage) => void;
   onBinaryMessage?: (data: ArrayBuffer) => void;
+  onHeartbeatTimeout?: () => void;  // Called when heartbeat times out (3 missed pings)
+  onPeerDisconnect?: (reason: 'user_initiated' | 'error') => void;  // Called when peer sends disconnect
 }
 
 /**
@@ -79,6 +91,14 @@ export class WebRTCConnectionService {
   private onStateChange: ((state: ConnectionState) => void) | null = null;
   private onControlMessage: ((msg: ControlMessage) => void) | null = null;
   private onBinaryMessage: ((data: ArrayBuffer) => void) | null = null;
+  private onHeartbeatTimeout: (() => void) | null = null;
+  private onPeerDisconnect: ((reason: 'user_initiated' | 'error') => void) | null = null;
+
+  // Heartbeat management
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private lastPongTime: number = 0;
+  private readonly HEARTBEAT_INTERVAL = 5000;  // 5s between pings
+  private readonly HEARTBEAT_TIMEOUT = 15000;  // 15s = 3 missed pings
 
   /**
    * Create a new WebRTCConnectionService.
@@ -103,6 +123,12 @@ export class WebRTCConnectionService {
     }
     if (callbacks.onBinaryMessage) {
       this.onBinaryMessage = callbacks.onBinaryMessage;
+    }
+    if (callbacks.onHeartbeatTimeout) {
+      this.onHeartbeatTimeout = callbacks.onHeartbeatTimeout;
+    }
+    if (callbacks.onPeerDisconnect) {
+      this.onPeerDisconnect = callbacks.onPeerDisconnect;
     }
   }
 
@@ -334,11 +360,103 @@ export class WebRTCConnectionService {
     }
   }
 
+  // ============================================================
+  // Heartbeat management
+  // ============================================================
+
+  /**
+   * Start sending heartbeat pings.
+   * Call when connection is established.
+   * Pings every 5s, times out after 15s (3 missed pongs).
+   */
+  startHeartbeat(): void {
+    this.stopHeartbeat();  // Clear any existing
+    this.lastPongTime = Date.now();
+
+    console.log('[WebRTC] Starting heartbeat (5s interval, 15s timeout)');
+
+    this.heartbeatInterval = setInterval(() => {
+      // Check for timeout
+      const elapsed = Date.now() - this.lastPongTime;
+      if (elapsed > this.HEARTBEAT_TIMEOUT) {
+        console.warn('[WebRTC] Heartbeat timeout - no pong in 15s');
+        this.stopHeartbeat();
+        if (this.onHeartbeatTimeout) {
+          this.onHeartbeatTimeout();
+        }
+        return;
+      }
+
+      // Send ping
+      this.sendControl(createHeartbeatPing());
+    }, this.HEARTBEAT_INTERVAL);
+  }
+
+  /**
+   * Stop sending heartbeat pings.
+   * Called on disconnect or heartbeat timeout.
+   */
+  stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+      console.log('[WebRTC] Stopped heartbeat');
+    }
+  }
+
+  /**
+   * Record that a heartbeat pong was received.
+   * Resets the timeout timer.
+   */
+  private receivePong(): void {
+    this.lastPongTime = Date.now();
+  }
+
+  /**
+   * Handle incoming heartbeat messages.
+   * Ping: respond with pong
+   * Pong: update lastPongTime
+   */
+  private handleHeartbeatMessage(msg: HeartbeatMessage): void {
+    if (msg.type === 'heartbeat_ping') {
+      // Respond with pong, echoing the sentAt
+      this.sendControl(createHeartbeatPong((msg as HeartbeatPing).sentAt));
+    } else if (msg.type === 'heartbeat_pong') {
+      this.receivePong();
+    }
+  }
+
+  /**
+   * Gracefully disconnect - send disconnect message before closing.
+   * CONN-08: User can intentionally disconnect.
+   *
+   * @param reason - Why disconnecting (user_initiated or error)
+   */
+  async gracefulDisconnect(reason: 'user_initiated' | 'error' = 'user_initiated'): Promise<void> {
+    console.log('[WebRTC] Graceful disconnect:', reason);
+
+    // Stop heartbeat first
+    this.stopHeartbeat();
+
+    // Send disconnect message if channel is still open
+    if (this.controlChannel?.readyState === 'open') {
+      this.sendControl(createDisconnect(reason));
+      // Small delay to ensure message is sent before closing
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // Now disconnect
+    this.disconnect();
+  }
+
   /**
    * Disconnect and clean up all resources.
    */
   disconnect(): void {
     console.log('[WebRTC] Disconnecting...');
+
+    // Stop heartbeat
+    this.stopHeartbeat();
 
     // Close DataChannels
     if (this.controlChannel) {
@@ -706,6 +824,23 @@ export class WebRTCConnectionService {
   private handleControlMessage(data: string): void {
     try {
       const message = JSON.parse(data) as ControlMessage;
+
+      // Handle heartbeat messages internally
+      if (isHeartbeatMessage(message)) {
+        this.handleHeartbeatMessage(message as HeartbeatMessage);
+        return;  // Don't pass to external handler
+      }
+
+      // Handle disconnect message
+      if (isDisconnectMessage(message)) {
+        console.log('[WebRTC] Received disconnect message:', (message as DisconnectMessage).reason);
+        this.stopHeartbeat();
+        if (this.onPeerDisconnect) {
+          this.onPeerDisconnect((message as DisconnectMessage).reason);
+        }
+        return;  // Don't pass to external handler
+      }
+
       console.log('[WebRTC] Control message received:', message.type);
 
       if (this.onControlMessage) {
