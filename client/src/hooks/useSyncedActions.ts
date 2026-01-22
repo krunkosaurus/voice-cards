@@ -67,7 +67,8 @@ export function useSyncedActions() {
         if (!connection?.isReady()) return;
 
         const audioSize = audioBlob?.size ?? 0;
-        connection.sendControl(createCardCreateOp(card, audioSize));
+        const op = createCardCreateOp(card, audioSize);
+        connection.sendControl(op);
 
         // If audio exists, send via chunk protocol
         if (audioBlob && audioBlob.size > 0) {
@@ -207,6 +208,35 @@ export function useSyncedActions() {
     [updateCard, shouldBroadcast, getConnection, getAudioTransfer]
   );
 
+  /**
+   * Broadcast card create WITHOUT adding to local state.
+   * Use when you've already added the card locally and just need to broadcast.
+   */
+  const broadcastCardCreate = useCallback(
+    async (card: Card, audioBlob?: Blob) => {
+      if (!shouldBroadcast()) return;
+
+      const connection = getConnection();
+      if (!connection?.isReady()) return;
+
+      const audioSize = audioBlob?.size ?? 0;
+      const op = createCardCreateOp(card, audioSize);
+      connection.sendControl(op);
+
+      // If audio exists, send via chunk protocol
+      if (audioBlob && audioBlob.size > 0) {
+        const audioTransfer = getAudioTransfer();
+        if (!audioTransfer) return;
+
+        const totalChunks = calculateTotalChunks(audioSize);
+        connection.sendControl(createChunkStart(card.id, 0, totalChunks, audioSize));
+        await audioTransfer.sendAudio(card.id, 0, audioBlob);
+        connection.sendControl(createChunkComplete(card.id, 0));
+      }
+    },
+    [shouldBroadcast, getConnection, getAudioTransfer]
+  );
+
   return {
     // Synced actions - broadcast to peer when conditions met
     addCard: syncedAddCard,
@@ -214,6 +244,9 @@ export function useSyncedActions() {
     deleteCard: syncedDeleteCard,
     reorderCards: syncedReorderCards,
     audioChange: syncedAudioChange,
+
+    // Broadcast-only - for cases where local state already updated
+    broadcastCardCreate,
 
     // Raw actions - for cases where sync shouldn't happen
     // (e.g., applying remote operations, viewer-only operations)
