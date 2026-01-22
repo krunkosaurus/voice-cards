@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 4
-**Phase Status:** In progress (3/5 plans)
+**Phase Status:** In progress (4/5 plans)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -11,7 +11,7 @@
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
-| 4 | Editor Role System | In Progress (3/5) | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
+| 4 | Editor Role System | In Progress (4/5) | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
@@ -22,12 +22,13 @@ Progress: [========..] 80%
 ## Current Focus
 
 **Phase 4: Editor Role System - IN PROGRESS**
-- Status: Plan 04-03 complete (role UI components)
+- Status: Plan 04-04 complete (UI editing restrictions)
 - Goal: Enable role transfer between editor and viewer
 - Plan 04-01: Role protocol message types (COMPLETE)
 - Plan 04-02: Role state management (COMPLETE)
 - Plan 04-03: Role UI components (COMPLETE)
-- Next Action: Plan 04-04 (wire up role UI in Home.tsx)
+- Plan 04-04: UI editing restrictions (COMPLETE)
+- Next Action: Plan 04-05 (if exists, or phase complete)
 
 ## Key Decisions
 
@@ -79,6 +80,9 @@ Progress: [========..] 80%
 | canEdit=false during transferring | ROLE-05: No edits during role handoff | 2026-01-22 |
 | Denied state auto-clears after 3s | Better UX, viewer can retry request | 2026-01-22 |
 | Role transfer state resets on disconnect | Prevents stuck states | 2026-01-22 |
+| canEdit prop drilling pattern | Pass canEdit from Home through CardList to Card for viewer restrictions | 2026-01-22 |
+| Early-return guards in handlers | Defense in depth: check canEdit at start of editing handlers | 2026-01-22 |
+| Drag handle faded not hidden | opacity-30 keeps UI consistent while preventing interaction | 2026-01-22 |
 
 ## Technical Context
 
@@ -111,8 +115,8 @@ Progress: [========..] 80%
 
 ## Session Continuity
 
-Last session: 2026-01-22T14:14:38Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-01-22T14:23:52Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -121,7 +125,15 @@ None currently.
 
 ## Notes
 
-Phase 4 in progress. Role UI components complete.
+Phase 4 in progress. UI editing restrictions complete.
+
+**Plan 04-04:** UI editing restrictions (COMPLETE)
+- canEdit prop passed from Home.tsx through CardList to Card
+- All editing controls disabled when viewer: record, edit, delete, duplicate, trim/split
+- Drag-and-drop disabled via sensor constraint and dragListeners removal
+- Keyboard shortcuts R, E, Ctrl+Z, Ctrl+Shift+Z blocked for viewers
+- Playback controls remain functional for all users
+- Handler guards provide defense in depth
 
 **Plan 04-03:** Role UI components (COMPLETE)
 - RoleBadge component showing "Editing" or "Viewing" state
@@ -172,6 +184,7 @@ Key capabilities now available:
 - Origin flag prevents infinite broadcast loops
 - Audio changes include full chunk protocol
 - Role transfer state machine ready for UI components
+- UI editing restrictions enforced for viewers
 
 **Phase 3 Complete:** All 3 plans executed successfully
 - Operation types and message creators (03-01)
