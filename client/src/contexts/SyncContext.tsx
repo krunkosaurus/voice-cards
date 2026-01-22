@@ -154,7 +154,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         // Create audio transfer service
         audioTransferRef.current = new AudioTransferService(conn);
 
-        // Wire up callbacks
+        // Wire up callbacks for future state changes
         conn.setCallbacks({
           onStateChange: (state) => {
             setConnectionState(state);
@@ -168,6 +168,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
             handleBinaryMessage(data);
           },
         });
+
+        // CRITICAL: Set current state immediately since connection may already be connected
+        // The callback above only fires on FUTURE state changes
+        const currentState = conn.getState();
+        console.log('[Sync] setConnection called, current state:', currentState);
+        setConnectionState(currentState);
       } else {
         audioTransferRef.current = null;
         setConnectionState('disconnected');
