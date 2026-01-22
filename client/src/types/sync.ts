@@ -23,6 +23,7 @@ export type ConnectionState =
   | 'creating_answer'  // Generating SDP answer (responder)
   | 'connecting'       // ICE negotiation in progress
   | 'connected'        // DataChannels open and ready
+  | 'reconnecting'     // Attempting to recover connection
   | 'error';           // Connection failed
 
 /**
@@ -190,7 +191,10 @@ export type SyncControlMessage =
   | RoleRequestMessage
   | RoleGrantMessage
   | RoleDenyMessage
-  | RoleTransferCompleteMessage;
+  | RoleTransferCompleteMessage
+  | HeartbeatPing
+  | HeartbeatPong
+  | DisconnectMessage;
 
 // =============================================================================
 // Real-Time Sync Operation Types (SYNC-01 through SYNC-05)
@@ -298,6 +302,39 @@ export interface RoleDenyMessage extends ControlMessage {
 export interface RoleTransferCompleteMessage extends ControlMessage {
   type: 'role_transfer_complete';
 }
+
+/**
+ * Heartbeat ping sent periodically to detect stale connections.
+ * CONN-07: Connection health monitoring.
+ */
+export interface HeartbeatPing extends ControlMessage {
+  type: 'heartbeat_ping';
+  sentAt: number;  // Timestamp for RTT calculation
+}
+
+/**
+ * Response to heartbeat ping.
+ * Echo back sentAt for RTT calculation.
+ */
+export interface HeartbeatPong extends ControlMessage {
+  type: 'heartbeat_pong';
+  sentAt: number;  // Echoed from ping for RTT calculation
+}
+
+/**
+ * Sent before intentionally closing connection.
+ * Receiver should NOT auto-reconnect when receiving this.
+ * CONN-08: Graceful disconnect.
+ */
+export interface DisconnectMessage extends ControlMessage {
+  type: 'disconnect';
+  reason: 'user_initiated' | 'error';
+}
+
+/**
+ * Union type of heartbeat messages.
+ */
+export type HeartbeatMessage = HeartbeatPing | HeartbeatPong;
 
 /**
  * Union type of all role transfer messages.
