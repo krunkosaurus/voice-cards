@@ -167,16 +167,17 @@ Plans:
 - [ ] 05-04-PLAN.md — Enhanced SyncIndicator (popover, disconnect button, toast notifications)
 
 **Deliverables:**
-- ICE restart on disconnection (not full peer connection recreation)
-- Connection health monitoring with heartbeat ping/pong (5s interval)
-- Exponential backoff for reconnection attempts
-- "Reconnecting..." UI state
-- Graceful disconnect button
-- Peer connected indicator
-- Connection lost notification
+- Connection health monitoring with heartbeat ping/pong (5s interval, 15s timeout)
+- Connection loss detection and "Reconnecting..." UI state
+- Graceful disconnect protocol (notify peer before closing)
+- Peer connected indicator with popover showing connection info
+- Connection lost notification (toast)
+- "Start New Session" button for manual reconnection
+
+**Note:** Due to manual SDP exchange architecture, automatic ICE restart isn't feasible. When connection drops, users are notified and must start a new session. This is documented in 05-RESEARCH.md.
 
 **Success Criteria:**
-- [ ] When connection drops temporarily, it auto-recovers without user action (CONN-07)
+- [ ] User is notified when connection drops and can start new session (CONN-07)
 - [ ] User can click "Disconnect" to cleanly end the session (CONN-08)
 - [ ] User sees indicator showing peer is connected (PRES-01)
 - [ ] User sees notification when connection is lost (PRES-02)
