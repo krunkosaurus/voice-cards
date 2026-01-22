@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
-**Current Phase:** 3
-**Phase Status:** In Progress (3/4 plans)
+**Current Phase:** 4
+**Phase Status:** In progress (1/5 plans)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -10,22 +10,22 @@
 |-------|------|--------|--------------|
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
-| 3 | Real-Time Sync | In Progress (3/4 plans) | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
-| 4 | Editor Role System | Not Started | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
+| 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
+| 4 | Editor Role System | In Progress (1/5) | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
-**Overall:** 2/6 phases complete
+**Overall:** 3/6 phases complete
 
-Progress: [=======...] 70%
+Progress: [========..] 80%
 
 ## Current Focus
 
-**Phase 3: Real-Time Sync - IN PROGRESS**
-- Status: In Progress (3/4 plans done)
-- Goal: Editor changes broadcast to viewers in real-time
-- Last Completed: 03-03-PLAN.md (Broadcast Wrappers)
-- Next Action: Execute 03-04-PLAN.md (if exists) or complete Phase 3
+**Phase 4: Editor Role System - IN PROGRESS**
+- Status: Plan 04-01 complete (role message types)
+- Goal: Enable role transfer between editor and viewer
+- Plan 04-01: Role protocol message types (COMPLETE)
+- Next Action: Plan 04-02 (role state management)
 
 ## Key Decisions
 
@@ -65,6 +65,11 @@ Progress: [=======...] 70%
 | Card state from ProjectContext | Use projectState.cards for merge operations | 2026-01-22 |
 | Card.tsx calls syncedUpdateCard directly | Avoids double dispatch through callback chain | 2026-01-22 |
 | shouldBroadcast() helper pattern | Centralizes 3-condition check for broadcasting | 2026-01-22 |
+| broadcastCardCreate pattern | Separate broadcast from local state add for existing cards | 2026-01-22 |
+| pendingCardCreatesRef Map<string, Card> | Store full card data to avoid stale closure issues | 2026-01-22 |
+| Track audio BEFORE async ops | Prevent race where chunks complete before cardId tracked | 2026-01-22 |
+| Reset sync progress after real-time op | Real-time ops don't have sync_complete message | 2026-01-22 |
+| WaveformThumbnail key with updatedAt | Force remount to load audio after real-time sync | 2026-01-22 |
 
 ## Technical Context
 
@@ -95,8 +100,8 @@ Progress: [=======...] 70%
 
 ## Session Continuity
 
-Last session: 2026-01-22T12:34:15Z
-Stopped at: Completed 03-03-PLAN.md
+Last session: 2026-01-22T13:05:00Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -105,7 +110,16 @@ None currently.
 
 ## Notes
 
-Phase 3 continuing. Broadcast wrappers now implemented.
+Phase 4 in progress. Role protocol message types complete.
+
+**Plan 04-01:** Role protocol message types (COMPLETE)
+- RoleRequestMessage, RoleGrantMessage, RoleDenyMessage, RoleTransferCompleteMessage interfaces
+- RoleMessage union type
+- Updated SyncControlMessage to include role messages
+- createRoleRequest, createRoleGrant, createRoleDeny, createRoleTransferComplete functions
+- isRoleMessage type guard for routing
+
+Phase 3 complete. Broadcast wrappers implemented.
 
 **Plan 03-01:** Sync operation types and message creators (COMPLETE)
 - CardCreateOperation, CardUpdateOperation, CardDeleteOperation
@@ -134,7 +148,20 @@ Key capabilities now available:
 - Origin flag prevents infinite broadcast loops
 - Audio changes include full chunk protocol
 
-Next: Check if 03-04-PLAN.md exists or Phase 3 complete
+**Phase 3 Complete:** All 3 plans executed successfully
+- Operation types and message creators (03-01)
+- Operation handlers in SyncContext (03-02)
+- Broadcast wrappers with useSyncedActions hook (03-03)
+
+**User Testing Complete:** Real-time sync verified working.
+
+Bugs found and fixed during testing:
+- Recording not using synced actions (fixed with broadcastCardCreate)
+- Audio not saving for real-time ops (fixed pendingCardCreatesRef)
+- Waveform not displaying (fixed with key prop on WaveformThumbnail)
+- Stale closure issue (changed Set to Map with full card data)
+- Race condition (track audio BEFORE async operations)
+- Sync progress stuck (reset after real-time op completes)
 
 ---
 
