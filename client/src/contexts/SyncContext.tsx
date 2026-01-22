@@ -73,6 +73,17 @@ type RoleTransferState =
   | { status: 'denied'; reason?: string };  // Viewer: request was denied
 
 /**
+ * Reconnection state for connection loss handling.
+ * Note: Due to manual SDP exchange, automatic reconnection isn't possible.
+ * User must start a new connection after failure.
+ */
+type ReconnectionState =
+  | { status: 'idle' }
+  | { status: 'reconnecting' }  // Brief state while detecting if connection recovers
+  | { status: 'failed'; reason: string }  // Connection lost - manual reconnect required
+  | { status: 'peer_disconnected' };  // Peer intentionally disconnected
+
+/**
  * Pending sync request from editor (viewer sees this).
  */
 interface PendingSyncRequest {
@@ -107,6 +118,9 @@ interface SyncState {
   receivedAudio: Map<string, Blob>;
   // Role transfer state (ROLE-02, ROLE-03, ROLE-05)
   roleTransferState: RoleTransferState;
+  // Reconnection state (CONN-07, CONN-08)
+  reconnectionState: ReconnectionState;
+  connectedAt: number | null;  // Timestamp when connected
 }
 
 /**
@@ -140,6 +154,14 @@ interface SyncContextValue {
   requestRole: (reason?: string) => void;
   grantRole: () => void;
   denyRole: (reason?: string) => void;
+
+  // Reconnection state (CONN-07)
+  reconnectionState: ReconnectionState;
+  connectedAt: number | null;
+  resetReconnectionState: () => void;  // For "Try again" button
+
+  // Graceful disconnect (CONN-08)
+  gracefulDisconnect: () => Promise<void>;
 }
 
 // =============================================================================
@@ -165,7 +187,12 @@ const initialSyncState: SyncState = {
   receivedCards: [],
   receivedAudio: new Map(),
   roleTransferState: { status: 'idle' },
+  reconnectionState: { status: 'idle' },
+  connectedAt: null,
 };
+
+// Reconnection config - brief delay before showing "connection lost"
+const RECONNECT_DETECT_DELAY = 2000;  // 2s to detect if connection self-recovers
 
 // =============================================================================
 // Context
@@ -201,6 +228,106 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   // Store full card data to avoid stale closure issues
   const pendingCardCreatesRef = useRef<Map<string, Card>>(new Map());
 
+  // Reconnection timer ref
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ==========================================================================
+  // Reconnection Handlers (CONN-07, CONN-08)
+  // ==========================================================================
+
+  /**
+   * Handle heartbeat timeout - connection is stale.
+   * Show brief "reconnecting" state, then transition to "failed".
+   *
+   * CONN-07: Due to manual SDP exchange, automatic ICE restart isn't feasible.
+   * User must start a new connection.
+   */
+  const handleHeartbeatTimeout = useCallback(() => {
+    console.log('[Sync] Heartbeat timeout - connection lost');
+
+    // Show reconnecting state briefly (connection might self-recover)
+    setConnectionState('reconnecting');
+    setSyncState((prev) => ({
+      ...prev,
+      reconnectionState: { status: 'reconnecting' },
+    }));
+
+    // After brief delay, transition to failed state
+    // (Manual SDP exchange means we can't auto-reconnect)
+    reconnectTimerRef.current = setTimeout(() => {
+      console.log('[Sync] Connection lost - manual reconnection required');
+      setSyncState((prev) => ({
+        ...prev,
+        reconnectionState: {
+          status: 'failed',
+          reason: 'Connection lost. Please start a new session.',
+        },
+      }));
+    }, RECONNECT_DETECT_DELAY);
+  }, []);
+
+  /**
+   * Handle peer explicitly disconnecting.
+   * Do NOT show reconnecting state - this was intentional.
+   * CONN-08: Graceful disconnect from peer.
+   */
+  const handlePeerDisconnect = useCallback((reason: 'user_initiated' | 'error') => {
+    console.log('[Sync] Peer disconnected:', reason);
+
+    // Clear any reconnection timer
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+
+    // Transition to peer_disconnected state (no reconnecting state)
+    setSyncState((prev) => ({
+      ...prev,
+      reconnectionState: { status: 'peer_disconnected' },
+      connectedAt: null,
+    }));
+
+    // Disconnect locally
+    connectionRef.current?.disconnect();
+    setConnectionState('disconnected');
+  }, []);
+
+  /**
+   * Reset reconnection state - for "Try again" button.
+   * Clears failed/peer_disconnected state so user can start fresh connection.
+   */
+  const resetReconnectionState = useCallback(() => {
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    setSyncState((prev) => ({
+      ...prev,
+      reconnectionState: { status: 'idle' },
+      connectedAt: null,
+    }));
+  }, []);
+
+  /**
+   * Graceful disconnect - notify peer before closing.
+   * CONN-08: User-initiated disconnect sends message to peer.
+   */
+  const gracefulDisconnect = useCallback(async () => {
+    const conn = connectionRef.current;
+    if (!conn) return;
+
+    console.log('[Sync] Graceful disconnect initiated');
+    await conn.gracefulDisconnect('user_initiated');
+
+    // Clean up local state
+    setSyncState((prev) => ({
+      ...prev,
+      reconnectionState: { status: 'idle' },
+      connectedAt: null,
+    }));
+    setConnectionState('disconnected');
+  }, []);
+
   // ==========================================================================
   // Connection Management
   // ==========================================================================
@@ -220,6 +347,22 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         conn.setCallbacks({
           onStateChange: (state) => {
             setConnectionState(state);
+
+            // Start heartbeat when connected
+            if (state === 'connected') {
+              conn.startHeartbeat();
+              // Record connection time
+              setSyncState((prev) => ({
+                ...prev,
+                connectedAt: Date.now(),
+                reconnectionState: { status: 'idle' },
+              }));
+            }
+
+            // Stop heartbeat on disconnect/error
+            if (state === 'disconnected' || state === 'error') {
+              conn.stopHeartbeat();
+            }
           },
           onControlMessage: (msg) => {
             // Route role messages first (role transfer protocol)
@@ -237,24 +380,37 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
           onBinaryMessage: (data) => {
             handleBinaryMessage(data);
           },
+          onHeartbeatTimeout: () => {
+            handleHeartbeatTimeout();
+          },
+          onPeerDisconnect: (reason) => {
+            handlePeerDisconnect(reason);
+          },
         });
 
         // CRITICAL: Set current state immediately since connection may already be connected
         // The callback above only fires on FUTURE state changes
         setConnectionState(conn.getState());
       } else {
+        // Clear reconnect timer
+        if (reconnectTimerRef.current) {
+          clearTimeout(reconnectTimerRef.current);
+          reconnectTimerRef.current = null;
+        }
         audioTransferRef.current = null;
         setConnectionState('disconnected');
         // Reset initial sync flag when disconnected
         hasInitialSyncedRef.current = false;
-        // Reset role transfer state on disconnect
+        // Reset role transfer state and reconnection state on disconnect
         setSyncState((prev) => ({
           ...prev,
           roleTransferState: { status: 'idle' },
+          reconnectionState: { status: 'idle' },
+          connectedAt: null,
         }));
       }
     },
-    []
+    [handleHeartbeatTimeout, handlePeerDisconnect]
   );
 
   /**
@@ -1149,6 +1305,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     requestRole,
     grantRole,
     denyRole,
+    // Reconnection state (CONN-07, CONN-08)
+    reconnectionState: syncState.reconnectionState,
+    connectedAt: syncState.connectedAt,
+    resetReconnectionState,
+    gracefulDisconnect,
   };
 
   return <SyncContext.Provider value={value}>{children}</SyncContext.Provider>;
