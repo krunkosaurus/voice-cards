@@ -1,6 +1,8 @@
 // types/sync.ts - P2P sync system types
 // Design: WebRTC connection management for serverless peer-to-peer sync
 
+import { Card, CardColor } from '@/types';
+
 /**
  * Connection state machine states for WebRTC P2P sync.
  *
@@ -77,3 +79,121 @@ export const DEFAULT_CONNECTION_CONFIG: ConnectionConfig = {
   iceServers: DEFAULT_ICE_SERVERS,
   iceGatheringTimeout: 10000, // 10 seconds to gather ICE candidates
 };
+
+// =============================================================================
+// Sync Protocol Message Types
+// =============================================================================
+
+/**
+ * Card metadata without audio data - used in sync_request message.
+ * Contains all card fields except the audio Blob.
+ */
+export interface CardMetadata {
+  id: string;
+  label: string;
+  notes: string;
+  tags: string[];
+  color: CardColor;
+  duration: number;
+  waveformData?: number[];
+  transcript?: Card['transcript'];
+  createdAt: string;
+  updatedAt: string;
+  order: number;
+  audioSize: number;  // Size of audio blob in bytes
+}
+
+/**
+ * Editor sends to viewer on connection - initiates sync.
+ * Contains full project metadata and card metadata for preview.
+ */
+export interface SyncRequestMessage extends ControlMessage {
+  type: 'sync_request';
+  project: {
+    createdAt: string;
+    updatedAt: string;
+  };
+  cards: CardMetadata[];
+  totalAudioBytes: number;
+}
+
+/**
+ * Viewer accepts sync - ready to receive audio data.
+ */
+export interface SyncAcceptMessage extends ControlMessage {
+  type: 'sync_accept';
+}
+
+/**
+ * Viewer rejects sync - will not receive data.
+ */
+export interface SyncRejectMessage extends ControlMessage {
+  type: 'sync_reject';
+  reason: string;
+}
+
+/**
+ * Sent before transferring audio chunks for a card.
+ * Viewer uses this to prepare for incoming binary data.
+ */
+export interface ChunkStartMessage extends ControlMessage {
+  type: 'chunk_start';
+  cardId: string;
+  cardIndex: number;
+  totalChunks: number;
+  audioSize: number;
+}
+
+/**
+ * Sent after all audio chunks for a card have been transmitted.
+ */
+export interface ChunkCompleteMessage extends ControlMessage {
+  type: 'chunk_complete';
+  cardId: string;
+  cardIndex: number;
+}
+
+/**
+ * Sent when all cards have been transferred.
+ */
+export interface SyncCompleteMessage extends ControlMessage {
+  type: 'sync_complete';
+  totalCards: number;
+  totalBytes: number;
+}
+
+/**
+ * Sent when an error occurs during sync.
+ */
+export interface SyncErrorMessage extends ControlMessage {
+  type: 'sync_error';
+  error: string;
+}
+
+/**
+ * Union type of all sync control messages.
+ * Enables type narrowing based on message.type discriminant.
+ */
+export type SyncControlMessage =
+  | SyncRequestMessage
+  | SyncAcceptMessage
+  | SyncRejectMessage
+  | ChunkStartMessage
+  | ChunkCompleteMessage
+  | SyncCompleteMessage
+  | SyncErrorMessage;
+
+/**
+ * Sync transfer progress tracking.
+ * Used by UI to display progress indicators.
+ */
+export interface SyncProgress {
+  phase: 'idle' | 'requesting' | 'awaiting_accept' | 'transferring' | 'complete' | 'error';
+  currentCardIndex: number;
+  totalCards: number;
+  currentCardBytesTransferred: number;
+  currentCardBytesTotal: number;
+  totalBytesTransferred: number;
+  totalBytesTotal: number;
+  error?: string;
+}
