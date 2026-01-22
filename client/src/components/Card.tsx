@@ -45,6 +45,7 @@ interface CardProps {
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
+  canEdit?: boolean;
 }
 
 export function Card({
@@ -74,6 +75,7 @@ export function Card({
   isSelectionMode = false,
   isSelected = false,
   onToggleSelection,
+  canEdit = true,
 }: CardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -163,6 +165,7 @@ export function Card({
   }, [isEditingTitle]);
 
   const handleTitleDoubleClick = () => {
+    if (!canEdit) return; // Viewer cannot edit title
     setIsEditingTitle(true);
     setEditedTitle(card.label);
   };
@@ -273,10 +276,13 @@ export function Card({
                 className="font-display font-semibold text-lg bg-transparent border-b-2 border-primary focus:outline-none flex-1 mr-2"
               />
             ) : (
-              <h3 
-                className="font-display font-semibold text-lg truncate cursor-text hover:text-primary transition-colors"
+              <h3
+                className={cn(
+                  "font-display font-semibold text-lg truncate transition-colors",
+                  canEdit && "cursor-text hover:text-primary"
+                )}
                 onDoubleClick={handleTitleDoubleClick}
-                title="Double-click to edit"
+                title={canEdit ? "Double-click to edit" : card.label}
               >
                 {card.label}
               </h3>
@@ -286,9 +292,10 @@ export function Card({
             </span>
           </div>
 
-          {/* Waveform thumbnail */}
+          {/* Waveform thumbnail - key includes updatedAt to force re-mount when audio arrives */}
           <div className="my-2">
             <WaveformThumbnail
+              key={`${card.id}-${card.updatedAt}`}
               cardId={card.id}
               waveformData={card.waveformData}
               color={colorHex}
@@ -375,7 +382,8 @@ export function Card({
                 e.stopPropagation();
                 onDuplicate();
               }}
-              title="Duplicate"
+              disabled={!canEdit}
+              title={canEdit ? "Duplicate" : "View only"}
             >
               <Copy className="w-4 h-4" />
             </Button>
@@ -387,7 +395,8 @@ export function Card({
                 e.stopPropagation();
                 onDelete();
               }}
-              title="Delete"
+              disabled={!canEdit}
+              title={canEdit ? "Delete" : "View only"}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -413,51 +422,51 @@ export function Card({
                 )}
                 {card.transcript ? 'Toggle Transcript' : 'Generate Transcript'}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onEdit}>
+              <DropdownMenuItem onClick={onEdit} disabled={!canEdit}>
                 <Pencil className="w-4 h-4 mr-2" />
                 Edit Details
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onReRecord}>
+              <DropdownMenuItem onClick={onReRecord} disabled={!canEdit}>
                 <Mic className="w-4 h-4 mr-2" />
                 Re-record
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onAppend}>
+              <DropdownMenuItem onClick={onAppend} disabled={!canEdit}>
                 <PlusCircle className="w-4 h-4 mr-2" />
                 Append Audio
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onTrimSplit}>
+              <DropdownMenuItem onClick={onTrimSplit} disabled={!canEdit}>
                 <Scissors className="w-4 h-4 mr-2" />
                 Trim/Split
               </DropdownMenuItem>
               {onAddSilenceStart && (
-                <DropdownMenuItem onClick={onAddSilenceStart}>
+                <DropdownMenuItem onClick={onAddSilenceStart} disabled={!canEdit}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add 1s Silence to Start
                 </DropdownMenuItem>
               )}
               {onAddSilenceEnd && (
-                <DropdownMenuItem onClick={onAddSilenceEnd}>
+                <DropdownMenuItem onClick={onAddSilenceEnd} disabled={!canEdit}>
                   <Plus className="w-4 h-4 mr-2" />
                   Add 1s Silence to End
                 </DropdownMenuItem>
               )}
               {onRemoveSilenceStart && (
-                <DropdownMenuItem onClick={onRemoveSilenceStart}>
+                <DropdownMenuItem onClick={onRemoveSilenceStart} disabled={!canEdit}>
                   <Minus className="w-4 h-4 mr-2" />
                   Remove 1s from Start
                 </DropdownMenuItem>
               )}
               {onRemoveSilenceEnd && (
-                <DropdownMenuItem onClick={onRemoveSilenceEnd}>
+                <DropdownMenuItem onClick={onRemoveSilenceEnd} disabled={!canEdit}>
                   <Minus className="w-4 h-4 mr-2" />
                   Remove 1s from End
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={onDuplicate}>
+              <DropdownMenuItem onClick={onDuplicate} disabled={!canEdit}>
                 <Copy className="w-4 h-4 mr-2" />
                 Duplicate
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-destructive">
+              <DropdownMenuItem onClick={onDelete} className="text-destructive" disabled={!canEdit}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete
               </DropdownMenuItem>
@@ -467,9 +476,12 @@ export function Card({
 
         {/* Drag handle - full height on right edge */}
         <div
-          className="w-8 sm:w-10 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors border-l border-border"
+          className={cn(
+            "w-8 sm:w-10 flex items-center justify-center transition-colors border-l border-border",
+            canEdit ? "cursor-grab active:cursor-grabbing hover:bg-muted/50" : "opacity-30 pointer-events-none"
+          )}
           {...dragListeners}
-          title="Drag to reorder"
+          title={canEdit ? "Drag to reorder" : "View only"}
         >
           <GripVertical className="w-4 sm:w-5 h-4 sm:h-5 text-muted-foreground" />
         </div>
