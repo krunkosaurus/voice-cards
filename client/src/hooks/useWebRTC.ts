@@ -22,6 +22,9 @@ interface UseWebRTCReturn {
   // Callbacks for message handling (set by consumer)
   setOnControlMessage: (handler: (msg: ControlMessage) => void) => void;
   setOnBinaryMessage: (handler: (data: ArrayBuffer) => void) => void;
+
+  // Expose service for SyncContext integration
+  getConnectionService: () => WebRTCConnectionService | null;
 }
 
 export function useWebRTC(): UseWebRTCReturn {
@@ -110,6 +113,11 @@ export function useWebRTC(): UseWebRTCReturn {
     getService().setCallbacks({ onBinaryMessage: handler });
   }, [getService]);
 
+  // Expose service instance for SyncContext integration
+  const getConnectionService = useCallback(() => {
+    return serviceRef.current;
+  }, []);
+
   return {
     state,
     offerCode,
@@ -123,5 +131,6 @@ export function useWebRTC(): UseWebRTCReturn {
     sendBinary,
     setOnControlMessage,
     setOnBinaryMessage,
+    getConnectionService,
   };
 }

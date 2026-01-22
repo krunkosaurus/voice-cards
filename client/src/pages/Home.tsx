@@ -1,10 +1,11 @@
 // pages/Home.tsx - Main Voice Cards application page
 /* Design: Warm Analog Tape Aesthetic - Complete application layout */
 
-import { useState, useRef, useCallback, useMemo } from 'react';
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { useProject } from '@/contexts/ProjectContext';
 import { useHistory } from '@/contexts/HistoryContext';
 import { createSnapshot } from '@/contexts/HistoryContext';
+import { useSync } from '@/contexts/SyncContext';
 import { Header } from '@/components/Header';
 import { useWebRTC } from '@/hooks/useWebRTC';
 import { ConnectionDialog } from '@/components/ConnectionDialog';
@@ -72,6 +73,37 @@ export default function Home() {
   // WebRTC connection state
   const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
   const webrtc = useWebRTC();
+
+  // Sync context for P2P project sync
+  const { setConnection, setUserRole, syncState, connectionState, startSync, commitSync } = useSync();
+
+  // Wire WebRTC connection to SyncContext when connection established
+  useEffect(() => {
+    const service = webrtc.getConnectionService();
+    if (service && webrtc.state === 'connected') {
+      setConnection(service);
+      // Determine role: if we created the offer, we're the editor
+      // If we accepted an offer (have answerCode), we're the viewer
+      const role = webrtc.offerCode ? 'editor' : 'viewer';
+      setUserRole(role);
+    } else if (webrtc.state === 'disconnected') {
+      setConnection(null);
+    }
+  }, [webrtc.state, webrtc.offerCode, webrtc.getConnectionService, setConnection, setUserRole]);
+
+  // Show toast when sync completes and auto-commit for viewer
+  useEffect(() => {
+    if (syncState.progress.phase === 'complete') {
+      // If we're the viewer and sync is complete, commit the received data
+      if (syncState.role === 'viewer') {
+        commitSync().then(() => {
+          toast.success('Project synced successfully!');
+        });
+      } else {
+        toast.success('Project sent to viewer!');
+      }
+    }
+  }, [syncState.progress.phase, syncState.role, commitSync]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1119,6 +1151,9 @@ export default function Home() {
         onRedo={redo}
         connectionState={webrtc.state}
         onConnectClick={() => setConnectionDialogOpen(true)}
+        isEditor={syncState.role === 'editor'}
+        isSyncing={syncState.isSyncing}
+        onSyncNow={startSync}
       />
 
       <main className="flex-1 pb-32">

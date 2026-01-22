@@ -5,7 +5,10 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProjectProvider } from "./contexts/ProjectContext";
+import { SyncProvider } from "./contexts/SyncContext";
 import { HistoryProviderWrapper } from "./components/HistoryProviderWrapper";
+import { SyncProgress } from "./components/SyncProgress";
+import { OverwriteConfirmDialog } from "./components/OverwriteConfirmDialog";
 import Home from "./pages/Home";
 
 function Router() {
@@ -26,12 +29,16 @@ function App() {
         switchable
       >
         <ProjectProvider>
-          <HistoryProviderWrapper>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </HistoryProviderWrapper>
+          <SyncProvider>
+            <HistoryProviderWrapper>
+              <TooltipProvider>
+                <Toaster />
+                <SyncProgress />
+                <OverwriteConfirmDialog />
+                <Router />
+              </TooltipProvider>
+            </HistoryProviderWrapper>
+          </SyncProvider>
         </ProjectProvider>
       </ThemeProvider>
     </ErrorBoundary>

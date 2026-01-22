@@ -1,7 +1,7 @@
 // components/Header.tsx - App header with theme toggle and menu
 /* Design: Warm Analog Tape Aesthetic - Warm header with microphone icon */
 
-import { Mic, Sun, Moon, MoreVertical, Download, Upload, Trash2, Search, X, Undo2, Redo2 } from 'lucide-react';
+import { Mic, Sun, Moon, MoreVertical, Download, Upload, Trash2, Search, X, Undo2, Redo2, RefreshCw } from 'lucide-react';
 import { SyncIndicator } from './SyncIndicator';
 import type { ConnectionState } from '@/types/sync';
 import { Button } from './ui/button';
@@ -28,9 +28,13 @@ interface HeaderProps {
   onRedo?: () => void;
   connectionState: ConnectionState;
   onConnectClick: () => void;
+  // Sync props for manual sync
+  isEditor?: boolean;
+  isSyncing?: boolean;
+  onSyncNow?: () => void;
 }
 
-export function Header({ searchQuery, onSearchChange, onExport, onImport, onClearProject, onExportAudio, canUndo, canRedo, onUndo, onRedo, connectionState, onConnectClick }: HeaderProps) {
+export function Header({ searchQuery, onSearchChange, onExport, onImport, onClearProject, onExportAudio, canUndo, canRedo, onUndo, onRedo, connectionState, onConnectClick, isEditor, isSyncing, onSyncNow }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -118,6 +122,16 @@ export function Header({ searchQuery, onSearchChange, onExport, onImport, onClea
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                {/* Sync Now option for editor when connected */}
+                {isEditor && connectionState === 'connected' && onSyncNow && (
+                  <>
+                    <DropdownMenuItem onClick={onSyncNow} disabled={isSyncing}>
+                      <RefreshCw className={`w-4 h-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                      {isSyncing ? 'Syncing...' : 'Sync Now'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={onExport}>
                   <Download className="w-4 h-4 mr-2" />
                   Export Project
