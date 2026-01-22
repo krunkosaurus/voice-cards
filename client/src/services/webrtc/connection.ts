@@ -121,6 +121,28 @@ export class WebRTCConnectionService {
   }
 
   /**
+   * Check if the connection is ready to send/receive data.
+   * Both DataChannels must be open.
+   */
+  isReady(): boolean {
+    return this.controlReady && this.binaryReady && this.state === 'connected';
+  }
+
+  /**
+   * Check if control channel is ready for sending.
+   */
+  isControlReady(): boolean {
+    return this.controlReady;
+  }
+
+  /**
+   * Check if binary channel is ready for sending.
+   */
+  isBinaryReady(): boolean {
+    return this.binaryReady;
+  }
+
+  /**
    * Create an offer to initiate a connection.
    *
    * Process:
@@ -387,6 +409,30 @@ export class WebRTCConnectionService {
       console.error('[WebRTC] Failed to send binary data:', error);
       return false;
     }
+  }
+
+  /**
+   * Get debug information about the current connection state.
+   * Useful for troubleshooting connection issues.
+   */
+  getDebugInfo(): {
+    state: ConnectionState;
+    role: ConnectionRole | null;
+    controlReady: boolean;
+    binaryReady: boolean;
+    iceConnectionState: RTCIceConnectionState | null;
+    iceGatheringState: RTCIceGatheringState | null;
+    signalingState: RTCSignalingState | null;
+  } {
+    return {
+      state: this.state,
+      role: this.role,
+      controlReady: this.controlReady,
+      binaryReady: this.binaryReady,
+      iceConnectionState: this.pc?.iceConnectionState ?? null,
+      iceGatheringState: this.pc?.iceGatheringState ?? null,
+      signalingState: this.pc?.signalingState ?? null,
+    };
   }
 
   // ============================================================
