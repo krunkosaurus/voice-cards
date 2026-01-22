@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
-**Current Phase:** 2
-**Phase Status:** Complete (4/4 plans)
+**Current Phase:** 3
+**Phase Status:** In Progress (1/4 plans)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -10,7 +10,7 @@
 |-------|------|--------|--------------|
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
-| 3 | Real-Time Sync | Not Started | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
+| 3 | Real-Time Sync | In Progress (1/4 plans) | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Not Started | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
@@ -21,11 +21,11 @@ Progress: [======....] 60%
 
 ## Current Focus
 
-**Phase 2: Initial Sync - COMPLETE**
-- Status: Complete (4/4 plans done)
-- Goal: Editor can send full project to viewer on connection
-- Last Completed: 02-04-PLAN.md (Sync UI Components)
-- Next Action: Human verification of end-to-end sync flow
+**Phase 3: Real-Time Sync - IN PROGRESS**
+- Status: In Progress (1/4 plans done)
+- Goal: Editor changes broadcast to viewers in real-time
+- Last Completed: 03-01-PLAN.md (Sync Operation Types)
+- Next Action: Execute 03-02-PLAN.md (Operation Broadcasting)
 
 ## Key Decisions
 
@@ -55,6 +55,10 @@ Progress: [======....] 60%
 | Role detection based on offer vs answer | If user created offer (has offerCode), they are editor. If they accepted offer, they are viewer. | 2026-01-22 |
 | Auto-commit on viewer after sync_complete | Viewer should see synced project immediately without manual action | 2026-01-22 |
 | Sync wiring in Home.tsx not Header.tsx | Home.tsx already manages WebRTC hook state, keeps wiring co-located | 2026-01-22 |
+| Operation types extend ControlMessage | Timestamp/id metadata for message tracking | 2026-01-22 |
+| CardUpdateOperation limited to metadata | Audio changes use separate CardAudioChangeOperation | 2026-01-22 |
+| CardReorderOperation uses {id, order} array | Efficiency over full card objects | 2026-01-22 |
+| audioSize triggers binary transfer | Operation creator signals when audio data follows | 2026-01-22 |
 
 ## Technical Context
 
@@ -72,10 +76,10 @@ Progress: [======....] 60%
 5. Safari quirks - Promise-based API only, test early
 
 **Key files created:**
-- `client/src/types/sync.ts` - ConnectionState, SDPCodecResult, sync protocol message types
+- `client/src/types/sync.ts` - ConnectionState, SDPCodecResult, sync protocol message types, operation types
 - `client/src/services/webrtc/sdpCodec.ts` - encodeSDP, decodeSDP functions
 - `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class (with backpressure methods)
-- `client/src/services/webrtc/syncProtocol.ts` - Message creators, binary chunk utilities
+- `client/src/services/webrtc/syncProtocol.ts` - Message creators, binary chunk utilities, operation creators
 - `client/src/services/sync/AudioTransferService.ts` - Chunked audio send/receive with progress callbacks
 - `client/src/services/sync/projectSync.ts` - Project serialization/deserialization for sync
 - `client/src/contexts/SyncContext.tsx` - Sync state management and orchestration
@@ -84,8 +88,8 @@ Progress: [======....] 60%
 
 ## Session Continuity
 
-Last session: 2026-01-22T12:15:00Z
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-01-22T20:23:00Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -94,23 +98,22 @@ None currently.
 
 ## Notes
 
-Phase 2 complete. Initial sync UI and infrastructure established.
+Phase 3 started. Operation types and message creators established.
 
-**Plan 02-01:** Sync types and protocol message creators
-**Plan 02-02:** AudioTransferService with chunked send/receive and backpressure
-**Plan 02-03:** SyncContext with sender/receiver flows and auto-sync (XFER-01)
-**Plan 02-04:** Sync UI components (SyncProgress, OverwriteConfirmDialog, provider integration)
+**Plan 03-01:** Sync operation types and message creators (COMPLETE)
+- CardCreateOperation, CardUpdateOperation, CardDeleteOperation
+- CardReorderOperation, CardAudioChangeOperation
+- SyncOperation union type
+- isOperationMessage type guard
+- 5 message creator functions
 
 Key capabilities now available:
-- SyncContext orchestrates sync lifecycle
-- Editor auto-syncs full project when connection established (XFER-01)
-- Progress bar shows during transfer (XFER-02)
-- Toast notification on completion (XFER-03)
-- Warning dialog before overwriting viewer's project (XFER-04)
-- Manual "Sync Now" button for editor re-sync
-- commitSync writes to IndexedDB and reloads ProjectContext
+- Operation message types for all card actions
+- Type guards for routing operations in handlers
+- Message creators following MessageWithoutMeta pattern
+- audioSize field signals when binary transfer needed
 
-Awaiting human verification of end-to-end sync flow.
+Next: 03-02-PLAN.md - Operation Broadcasting (wire operations to ProjectContext actions)
 
 ---
 
