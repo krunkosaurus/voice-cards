@@ -1,7 +1,6 @@
-// QRScanner/QRScanner.tsx - Main scanner component with custom overlay
+// QRScanner/QRScanner.tsx - Main scanner component
 import { useEffect, useId } from 'react';
 import { useQRScanner } from './useQRScanner';
-import { ScannerOverlay } from './ScannerOverlay';
 
 interface QRScannerProps {
   onScan: (code: string) => void;
@@ -27,20 +26,26 @@ export function QRScanner({ onScan, onError, active }: QRScannerProps) {
 
   return (
     <div className="relative w-full h-full bg-black">
-      {/* Camera feed container - html5-qrcode renders here */}
+      {/* Camera feed container - html5-qrcode renders here with its own UI */}
       <div
         id={containerId}
         className="w-full h-full"
         style={{ minHeight: '300px' }}
       />
 
-      {/* Custom overlay on top of camera feed */}
-      {isScanning && <ScannerOverlay error={error} />}
-
       {/* Camera permission denied / not available */}
       {!isScanning && error && (
         <div className="absolute inset-0 flex items-center justify-center bg-black">
           <p className="text-white text-center px-4">{error}</p>
+        </div>
+      )}
+
+      {/* Hint text */}
+      {isScanning && (
+        <div className="absolute bottom-4 left-0 right-0 text-center">
+          <p className="text-white text-sm bg-black/50 inline-block px-3 py-1 rounded">
+            Point camera at QR code
+          </p>
         </div>
       )}
     </div>

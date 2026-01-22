@@ -34,14 +34,17 @@ export function useQRScanner(containerId: string, { onSuccess, onError }: UseQRS
       await scanner.start(
         { facingMode: 'environment' }, // Back camera, no 'exact' for iOS compatibility
         {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
+          fps: 15,
+          // No qrbox = scan full frame - better for dense QR codes like SDP
+          aspectRatio: 1.0,
         },
         (decodedText) => {
+          console.log('[QRScanner] Decoded:', decodedText.substring(0, 50) + '...');
           onSuccess(decodedText);
         },
         () => {} // Silent callback for "no QR found" per-frame errors
       );
+      console.log('[QRScanner] Started successfully');
 
       setIsScanning(true);
       setError(null);

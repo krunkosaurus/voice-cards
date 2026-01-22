@@ -82,8 +82,8 @@ export function ConnectionDialog({
   const copyToClipboard = async (text: string) => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    toast.success('Code copied to clipboard');
-    setTimeout(() => setCopied(false), 2000);
+    toast.success('Code copied to clipboard', { duration: 3000 });
+    setTimeout(() => setCopied(false), 3000);
   };
 
   const handleStartConnection = async () => {
