@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 3
-**Phase Status:** In Progress (1/4 plans)
+**Phase Status:** In Progress (2/4 plans)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -10,7 +10,7 @@
 |-------|------|--------|--------------|
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
-| 3 | Real-Time Sync | In Progress (1/4 plans) | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
+| 3 | Real-Time Sync | In Progress (2/4 plans) | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Not Started | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
@@ -22,10 +22,10 @@ Progress: [======....] 60%
 ## Current Focus
 
 **Phase 3: Real-Time Sync - IN PROGRESS**
-- Status: In Progress (1/4 plans done)
+- Status: In Progress (2/4 plans done)
 - Goal: Editor changes broadcast to viewers in real-time
-- Last Completed: 03-01-PLAN.md (Sync Operation Types)
-- Next Action: Execute 03-02-PLAN.md (Operation Broadcasting)
+- Last Completed: 03-02-PLAN.md (Operation Handlers)
+- Next Action: Execute 03-03-PLAN.md (Broadcast Wrappers)
 
 ## Key Decisions
 
@@ -59,6 +59,10 @@ Progress: [======....] 60%
 | CardUpdateOperation limited to metadata | Audio changes use separate CardAudioChangeOperation | 2026-01-22 |
 | CardReorderOperation uses {id, order} array | Efficiency over full card objects | 2026-01-22 |
 | audioSize triggers binary transfer | Operation creator signals when audio data follows | 2026-01-22 |
+| isApplyingRemoteRef timing | Flag set true BEFORE dispatch, false in finally block for proper deduplication | 2026-01-22 |
+| pendingAudioOps Map approach | Track audio operations awaiting binary data by cardId | 2026-01-22 |
+| Operation routing before sync messages | Operations are more specific, route first in callback | 2026-01-22 |
+| Card state from ProjectContext | Use projectState.cards for merge operations | 2026-01-22 |
 
 ## Technical Context
 
@@ -81,15 +85,15 @@ Progress: [======....] 60%
 - `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class (with backpressure methods)
 - `client/src/services/webrtc/syncProtocol.ts` - Message creators, binary chunk utilities, operation creators
 - `client/src/services/sync/AudioTransferService.ts` - Chunked audio send/receive with progress callbacks
-- `client/src/services/sync/projectSync.ts` - Project serialization/deserialization for sync
-- `client/src/contexts/SyncContext.tsx` - Sync state management and orchestration
+- `client/src/services/sync/projectSync.ts` - Project serialization/deserialization for sync, apply functions
+- `client/src/contexts/SyncContext.tsx` - Sync state management, orchestration, operation handlers
 - `client/src/components/SyncProgress.tsx` - Progress bar during sync transfer (XFER-02)
 - `client/src/components/OverwriteConfirmDialog.tsx` - Warning dialog before overwrite (XFER-04)
 
 ## Session Continuity
 
-Last session: 2026-01-22T20:23:00Z
-Stopped at: Completed 03-01-PLAN.md
+Last session: 2026-01-22T12:24:34Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -98,7 +102,7 @@ None currently.
 
 ## Notes
 
-Phase 3 started. Operation types and message creators established.
+Phase 3 continuing. Operation handlers now implemented.
 
 **Plan 03-01:** Sync operation types and message creators (COMPLETE)
 - CardCreateOperation, CardUpdateOperation, CardDeleteOperation
@@ -107,13 +111,20 @@ Phase 3 started. Operation types and message creators established.
 - isOperationMessage type guard
 - 5 message creator functions
 
-Key capabilities now available:
-- Operation message types for all card actions
-- Type guards for routing operations in handlers
-- Message creators following MessageWithoutMeta pattern
-- audioSize field signals when binary transfer needed
+**Plan 03-02:** Operation handlers in SyncContext (COMPLETE)
+- applyRemoteCardCreate/Update/Delete/Reorder/AudioChange functions
+- handleOperationMessage with switch for all 5 operation types
+- isApplyingRemoteRef for origin-based deduplication
+- pendingAudioOps Map for audio change coordination
+- getConnection/getAudioTransfer accessors exposed
 
-Next: 03-02-PLAN.md - Operation Broadcasting (wire operations to ProjectContext actions)
+Key capabilities now available:
+- Remote operations can be received and applied to local state
+- Origin flag prevents infinite broadcast loops
+- Audio changes wait for binary transfer completion
+- Connection and audio transfer accessible for broadcast wrappers
+
+Next: 03-03-PLAN.md - Broadcast Wrappers (wrap ProjectContext actions to broadcast)
 
 ---
 
