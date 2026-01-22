@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 5
-**Phase Status:** In Progress (3/4 plans complete)
+**Phase Status:** Complete (4/4 plans)
 **Updated:** 2026-01-23
 
 ## Progress
@@ -12,20 +12,21 @@
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Verified | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
-| 5 | Connection Polish | In Progress (3/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
+| 5 | Connection Polish | Complete (4/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
-**Overall:** 4/6 phases complete
+**Overall:** 5/6 phases complete
 
-Progress: [=========.] 92%
+Progress: [==========] 96%
 
 ## Current Focus
 
-**Phase 5: Connection Polish - IN PROGRESS**
-- Status: 3/4 plans complete (05-01, 05-02, 05-03)
+**Phase 5: Connection Polish - COMPLETE**
+- Status: 4/4 plans complete (05-01, 05-02, 05-03, 05-04)
 - Goal: Connection health monitoring, graceful disconnect, and UI polish
-- Completed: Heartbeat types (05-01), Heartbeat service (05-02), SyncContext heartbeat integration (05-03)
-- Next Action: Execute 05-04 (connection status UI polish)
+- All requirements fulfilled: CONN-07, CONN-08, PRES-01, PRES-02
+
+**Next:** Phase 6 (QR Code Support) if needed, or milestone complete.
 
 ## Key Decisions
 
@@ -89,6 +90,9 @@ Progress: [=========.] 92%
 | 2s RECONNECT_DETECT_DELAY | Brief window to detect if connection self-recovers before showing failed | 2026-01-23 |
 | No auto-reconnect | Due to manual SDP exchange, automatic ICE restart isn't feasible | 2026-01-23 |
 | Peer disconnect skips reconnecting | Intentional disconnect goes directly to peer_disconnected state | 2026-01-23 |
+| onOfflineClick prop for SyncIndicator | Allows Header to open ConnectionDialog when clicking badge while disconnected | 2026-01-23 |
+| Popover conditional display | Only shows popover when connected or had connection (failed/peer_disconnected) | 2026-01-23 |
+| gracefulDisconnect from context | SyncIndicator calls context directly, no prop drilling | 2026-01-23 |
 
 ## Technical Context
 
@@ -118,11 +122,12 @@ Progress: [=========.] 92%
 - `client/src/hooks/useSyncedActions.ts` - Hook wrapping ProjectContext actions with broadcast logic
 - `client/src/components/RoleBadge.tsx` - Role indicator badge with clickable viewer state
 - `client/src/components/RoleRequestDialog.tsx` - Dialog for editor to approve/deny role requests
+- `client/src/components/SyncIndicator.tsx` - Connection status badge with popover, disconnect button, toast notifications
 
 ## Session Continuity
 
-Last session: 2026-01-23T17:06:50Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-01-23T17:15:00Z
+Stopped at: Completed 05-04-PLAN.md (Phase 5 complete)
 Resume file: None
 
 ## Blockers
@@ -130,6 +135,14 @@ Resume file: None
 None currently.
 
 ## Notes
+
+**Plan 05-04:** Connection status UI polish (COMPLETE)
+- Reconnecting state with orange styling and spinning RefreshCw icon
+- Popover showing connection duration and user role when connected
+- Disconnect button using gracefulDisconnect from SyncContext
+- Toast notifications for connection lost, peer disconnected, and connected events
+- "Start New Session" button for failed/peer_disconnected states
+- onOfflineClick prop for Header to open ConnectionDialog when offline
 
 **Plan 05-03:** SyncContext heartbeat integration (COMPLETE)
 - ReconnectionState type (idle/reconnecting/failed/peer_disconnected)
@@ -156,71 +169,17 @@ None currently.
 - createHeartbeatPing, createHeartbeatPong, createDisconnect message creators
 - isHeartbeatMessage, isDisconnectMessage type guards
 
+**Phase 5 Complete:** All 4 plans executed successfully
+- Heartbeat protocol types (05-01)
+- Heartbeat service with graceful disconnect (05-02)
+- SyncContext heartbeat integration (05-03)
+- Connection status UI polish (05-04)
+
 **Phase 4 Complete:** All 4 plans executed and verified successfully
 - Role protocol message types (04-01)
 - Role state management in SyncContext (04-02)
 - Role UI components: RoleBadge, RoleRequestDialog (04-03)
 - UI editing restrictions for viewers (04-04)
-
-**Plan 04-04:** UI editing restrictions (COMPLETE)
-- canEdit prop passed from Home.tsx through CardList to Card
-- All editing controls disabled when viewer: record, edit, delete, duplicate, trim/split
-- Drag-and-drop disabled via sensor constraint and dragListeners removal
-- Keyboard shortcuts R, E, Ctrl+Z, Ctrl+Shift+Z blocked for viewers
-- Playback controls remain functional for all users
-- Handler guards provide defense in depth
-
-**Plan 04-03:** Role UI components (COMPLETE)
-- RoleBadge component showing "Editing" or "Viewing" state
-- RoleRequestDialog for editor approval of role transfer
-- Header integration with RoleBadge before SyncIndicator
-- Badge states: Editing, Viewing, Requesting..., Transferring..., Denied
-
-**Plan 04-02:** Role state management (COMPLETE)
-- RoleTransferState discriminated union (idle, pending_request, pending_approval, transferring, denied)
-- canEdit computed value respecting connection state, role, and transfer status
-- requestRole/grantRole/denyRole functions for role transfer protocol
-- handleRoleMessage integrated into SyncContext message routing
-- Role messages routed via isRoleMessage before operation messages
-
-**Plan 04-01:** Role protocol message types (COMPLETE)
-- RoleRequestMessage, RoleGrantMessage, RoleDenyMessage, RoleTransferCompleteMessage interfaces
-- RoleMessage union type
-- Updated SyncControlMessage to include role messages
-- createRoleRequest, createRoleGrant, createRoleDeny, createRoleTransferComplete functions
-- isRoleMessage type guard for routing
-
-Phase 3 complete. Broadcast wrappers implemented.
-
-**Plan 03-01:** Sync operation types and message creators (COMPLETE)
-- CardCreateOperation, CardUpdateOperation, CardDeleteOperation
-- CardReorderOperation, CardAudioChangeOperation
-- SyncOperation union type
-- isOperationMessage type guard
-- 5 message creator functions
-
-**Plan 03-02:** Operation handlers in SyncContext (COMPLETE)
-- applyRemoteCardCreate/Update/Delete/Reorder/AudioChange functions
-- handleOperationMessage with switch for all 5 operation types
-- isApplyingRemoteRef for origin-based deduplication
-- pendingAudioOps Map for audio change coordination
-- getConnection/getAudioTransfer accessors exposed
-
-**Plan 03-03:** Broadcast wrappers (COMPLETE)
-- useSyncedActions hook with synced versions of all card operations
-- shouldBroadcast() pattern: connected + editor + not applying remote
-- Home.tsx uses synced actions for all card operations
-- Card.tsx uses synced action for inline title edits
-- All SYNC-01 through SYNC-05 requirements now fulfilled
-
-Key capabilities now available:
-- Editor broadcasts all card operations to viewer via WebRTC
-- Viewer receives operations and applies to local state
-- Origin flag prevents infinite broadcast loops
-- Audio changes include full chunk protocol
-- Role transfer state machine ready for UI components
-- UI editing restrictions enforced for viewers
-- Reconnection state machine for connection loss detection
 
 **Phase 3 Complete:** All 3 plans executed successfully
 - Operation types and message creators (03-01)
