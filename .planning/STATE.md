@@ -9,23 +9,23 @@
 | Phase | Name | Status | Requirements |
 |-------|------|--------|--------------|
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
-| 2 | Initial Sync | In Progress (1/3 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
+| 2 | Initial Sync | In Progress (2/3 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Not Started | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Not Started | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
-**Overall:** 1/6 phases complete (Phase 2: 1/3 plans complete)
+**Overall:** 1/6 phases complete (Phase 2: 2/3 plans complete)
 
-Progress: [====......] 40%
+Progress: [=====.....] 50%
 
 ## Current Focus
 
 **Phase 2: Initial Sync**
-- Status: In Progress (Plan 1 of 3 complete)
+- Status: In Progress (Plan 2 of 3 complete)
 - Goal: Editor can send full project to viewer on connection
-- Last Completed: 02-01-PLAN.md (Sync Protocol Types)
-- Next Action: Execute 02-02-PLAN.md (Sync Sender)
+- Last Completed: 02-02-PLAN.md (Audio Transfer Service)
+- Next Action: Execute 02-03-PLAN.md (Sync Receiver)
 
 ## Key Decisions
 
@@ -46,6 +46,8 @@ Progress: [====......] 40%
 | Little-endian binary headers | Consistent cross-platform chunk encoding | 2026-01-22 |
 | 8-byte chunk header | cardIndex (4B) + chunkIndex (4B) for routing | 2026-01-22 |
 | MessageWithoutMeta pattern | Caller adds timestamp/id for flexibility | 2026-01-22 |
+| 64KB buffer threshold | Standard backpressure threshold for WebRTC | 2026-01-22 |
+| audio/webm type preserved | Blob reassembly maintains browser audio compatibility | 2026-01-22 |
 
 ## Technical Context
 
@@ -65,13 +67,14 @@ Progress: [====......] 40%
 **Key files created:**
 - `client/src/types/sync.ts` - ConnectionState, SDPCodecResult, sync protocol message types
 - `client/src/services/webrtc/sdpCodec.ts` - encodeSDP, decodeSDP functions
-- `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class
+- `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class (with backpressure methods)
 - `client/src/services/webrtc/syncProtocol.ts` - Message creators, binary chunk utilities
+- `client/src/services/sync/AudioTransferService.ts` - Chunked audio send/receive with progress callbacks
 
 ## Session Continuity
 
-Last session: 2026-01-22T11:20:34Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-01-22T11:24:56Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -80,13 +83,13 @@ None currently.
 
 ## Notes
 
-Phase 2 Plan 1 complete. Sync protocol types and utilities established.
-- SyncControlMessage union type enables type-safe message routing
-- Binary chunk encoding: 8-byte header (cardIndex + chunkIndex, LE) + data
-- calculateTotalChunks(audioSize) for chunk planning
-- isSyncControlMessage type guard for control channel dispatch
+Phase 2 Plan 2 complete. Audio transfer infrastructure established.
+- WebRTCConnectionService extended with backpressure control methods
+- AudioTransferService handles chunked send with waitForBinaryBufferDrain
+- AudioTransferService handles chunked receive with ordered reassembly
+- Progress callbacks enable UI updates during large transfers
 
-Ready for Plan 2: Sync sender implementation.
+Ready for Plan 3: Sync receiver implementation (SyncReceiverService).
 
 ---
 
