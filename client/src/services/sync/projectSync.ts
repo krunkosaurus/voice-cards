@@ -7,10 +7,12 @@ import {
   getAudio,
   saveProject,
   saveCard,
+  saveCards,
   saveAudio,
+  deleteCard,
   clearAllData,
 } from '@/services/db';
-import type { Card, Project } from '@/types';
+import type { Card, Project, TranscriptSegment } from '@/types';
 import type { CardMetadata } from '@/types/sync';
 
 // =============================================================================
@@ -163,4 +165,122 @@ export async function commitReceivedProject(
  */
 export async function getAudioForCard(cardId: string): Promise<Blob | null> {
   return await getAudio(cardId);
+}
+
+// =============================================================================
+// Apply Remote Operations (Receiver Side)
+// =============================================================================
+
+/**
+ * Apply a remote card create operation.
+ * Persists the new card and optional audio to IndexedDB.
+ *
+ * @param card - The card object from the operation
+ * @param audioBlob - Optional audio blob (arrives via binary transfer)
+ */
+export async function applyRemoteCardCreate(
+  card: Card,
+  audioBlob?: Blob
+): Promise<void> {
+  await saveCard(card);
+  if (audioBlob) {
+    await saveAudio(card.id, audioBlob);
+  }
+}
+
+/**
+ * Apply a remote card update operation.
+ * Merges changes into existing card and persists to IndexedDB.
+ *
+ * @param cardId - ID of the card to update
+ * @param changes - Partial card metadata (label, notes, tags, color)
+ * @param existingCard - Current card state from local store
+ * @returns The merged card
+ */
+export async function applyRemoteCardUpdate(
+  cardId: string,
+  changes: Partial<Pick<Card, 'label' | 'notes' | 'tags' | 'color'>>,
+  existingCard: Card
+): Promise<Card> {
+  const mergedCard: Card = {
+    ...existingCard,
+    ...changes,
+    updatedAt: new Date().toISOString(),
+  };
+  await saveCard(mergedCard);
+  return mergedCard;
+}
+
+/**
+ * Apply a remote card delete operation.
+ * Removes the card and its audio from IndexedDB.
+ *
+ * @param cardId - ID of the card to delete
+ */
+export async function applyRemoteCardDelete(cardId: string): Promise<void> {
+  await deleteCard(cardId);
+}
+
+/**
+ * Apply a remote card reorder operation.
+ * Updates order field on cards and persists to IndexedDB.
+ *
+ * @param cardOrder - Array of { id, order } from the operation
+ * @param existingCards - Current cards from local store
+ * @returns Reordered cards array
+ */
+export async function applyRemoteCardReorder(
+  cardOrder: Array<{ id: string; order: number }>,
+  existingCards: Card[]
+): Promise<Card[]> {
+  // Create lookup map for new order values
+  const orderLookup = new Map(cardOrder.map((co) => [co.id, co.order]));
+
+  // Update order field on each card
+  const reorderedCards = existingCards.map((card) => ({
+    ...card,
+    order: orderLookup.has(card.id) ? orderLookup.get(card.id)! : card.order,
+  }));
+
+  // Sort by new order
+  reorderedCards.sort((a, b) => a.order - b.order);
+
+  // Persist all cards
+  await saveCards(reorderedCards);
+
+  return reorderedCards;
+}
+
+/**
+ * Apply a remote card audio change operation.
+ * Updates audio metadata on card and saves new audio blob.
+ *
+ * @param cardId - ID of the card with audio change
+ * @param metadata - Audio metadata (duration, waveformData, transcript)
+ * @param existingCard - Current card state from local store
+ * @param audioBlob - New audio blob from binary transfer
+ * @returns The merged card
+ */
+export async function applyRemoteCardAudioChange(
+  cardId: string,
+  metadata: {
+    duration: number;
+    waveformData?: number[];
+    transcript?: TranscriptSegment[];
+  },
+  existingCard: Card,
+  audioBlob: Blob
+): Promise<Card> {
+  const mergedCard: Card = {
+    ...existingCard,
+    duration: metadata.duration,
+    waveformData: metadata.waveformData,
+    transcript: metadata.transcript,
+    updatedAt: new Date().toISOString(),
+  };
+
+  await saveCard(mergedCard);
+  await saveAudio(cardId, audioBlob);
+
+  return mergedCard;
 }
