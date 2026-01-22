@@ -128,10 +128,10 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Role protocol types and message creators
-- [ ] 04-02-PLAN.md — Role transfer state and handlers in SyncContext
-- [ ] 04-03-PLAN.md — Role UI components (RoleBadge, RoleRequestDialog, Header integration)
-- [ ] 04-04-PLAN.md — UI enforcement (disable editing controls for viewers)
+- [x] 04-01-PLAN.md — Role protocol types and message creators
+- [x] 04-02-PLAN.md — Role transfer state and handlers in SyncContext
+- [x] 04-03-PLAN.md — Role UI components (RoleBadge, RoleRequestDialog, Header integration)
+- [x] 04-04-PLAN.md — UI enforcement (disable editing controls for viewers)
 
 **Deliverables:**
 - Role indicator badge ("You are editing" / "Viewing only")
@@ -142,11 +142,11 @@ Plans:
 - Editing pause during role transfer
 
 **Success Criteria:**
-- [ ] Both users see their current role clearly displayed (ROLE-01)
-- [ ] Viewer can click button to request editor role (ROLE-02)
-- [ ] Editor sees request notification and can approve or deny (ROLE-03)
-- [ ] When in Viewer role, editing controls are disabled/hidden (ROLE-04)
-- [ ] During role transfer approval, editing is paused to prevent conflicts (ROLE-05)
+- [x] Both users see their current role clearly displayed (ROLE-01)
+- [x] Viewer can click button to request editor role (ROLE-02)
+- [x] Editor sees request notification and can approve or deny (ROLE-03)
+- [x] When in Viewer role, editing controls are disabled/hidden (ROLE-04)
+- [x] During role transfer approval, editing is paused to prevent conflicts (ROLE-05)
 
 ---
 
@@ -217,11 +217,11 @@ Plans:
 | SYNC-03 | 3 | Complete |
 | SYNC-04 | 3 | Complete |
 | SYNC-05 | 3 | Complete |
-| ROLE-01 | 4 | Pending |
-| ROLE-02 | 4 | Pending |
-| ROLE-03 | 4 | Pending |
-| ROLE-04 | 4 | Pending |
-| ROLE-05 | 4 | Pending |
+| ROLE-01 | 4 | Complete |
+| ROLE-02 | 4 | Complete |
+| ROLE-03 | 4 | Complete |
+| ROLE-04 | 4 | Complete |
+| ROLE-05 | 4 | Complete |
 | PRES-01 | 5 | Pending |
 | PRES-02 | 5 | Pending |
 
@@ -263,3 +263,4 @@ Phase 1: WebRTC Connection
 *Phase 3 planned: 2026-01-22*
 *Phase 3 executed: 2026-01-22*
 *Phase 4 planned: 2026-01-22*
+*Phase 4 executed: 2026-01-22*
