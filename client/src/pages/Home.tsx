@@ -6,6 +6,8 @@ import { useProject } from '@/contexts/ProjectContext';
 import { useHistory } from '@/contexts/HistoryContext';
 import { createSnapshot } from '@/contexts/HistoryContext';
 import { Header } from '@/components/Header';
+import { useWebRTC } from '@/hooks/useWebRTC';
+import { ConnectionDialog } from '@/components/ConnectionDialog';
 import { SelectionToolbar } from '@/components/SelectionToolbar';
 import { MicrophoneSetup } from '@/components/MicrophoneSetup';
 import { CardList } from '@/components/CardList';
@@ -66,7 +68,11 @@ export default function Home() {
   const [trimSplitCard, setTrimSplitCard] = useState<Card | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
-  
+
+  // WebRTC connection state
+  const [connectionDialogOpen, setConnectionDialogOpen] = useState(false);
+  const webrtc = useWebRTC();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { isPlaying, currentCardId, currentCardProgress, globalTime, totalDuration, playbackSpeed, isLooping, play, pause, seekToTime, seekWithinCurrentCard, jumpToCard, setPlaybackSpeed, setIsLooping } = useMasterPlayer(
@@ -1105,6 +1111,8 @@ export default function Home() {
         canRedo={canRedo}
         onUndo={undo}
         onRedo={redo}
+        connectionState={webrtc.state}
+        onConnectClick={() => setConnectionDialogOpen(true)}
       />
 
       <main className="flex-1 pb-32">
@@ -1231,6 +1239,19 @@ export default function Home() {
         onClose={() => setTrimSplitCard(null)}
         onTrim={handleTrim}
         onSplit={handleSplit}
+      />
+
+      <ConnectionDialog
+        open={connectionDialogOpen}
+        onOpenChange={setConnectionDialogOpen}
+        state={webrtc.state}
+        offerCode={webrtc.offerCode}
+        answerCode={webrtc.answerCode}
+        error={webrtc.error}
+        onCreateOffer={webrtc.createOffer}
+        onAcceptOffer={webrtc.acceptOffer}
+        onAcceptAnswer={webrtc.acceptAnswer}
+        onDisconnect={webrtc.disconnect}
       />
 
       <input
