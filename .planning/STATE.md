@@ -1,8 +1,8 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 6
-**Phase Status:** In Progress (2/? plans)
-**Updated:** 2026-01-23
+**Phase Status:** Complete (3/3 plans)
+**Updated:** 2026-01-22
 
 ## Progress
 
@@ -13,19 +13,20 @@
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Verified | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Complete (4/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
-| 6 | QR Code Support | In Progress (2/?) | CONN-06 |
+| 6 | QR Code Support | Complete (3/3 plans) | CONN-06 |
 
-**Overall:** 5/6 phases complete
+**Overall:** 6/6 phases complete
 
-Progress: [==========] 97%
+Progress: [==========] 100%
 
 ## Current Focus
 
-**Phase 6: QR Code Support - IN PROGRESS**
-- Status: 2/? plans complete (06-01, 06-02)
+**Phase 6: QR Code Support - COMPLETE**
+- Status: 3/3 plans complete (06-01, 06-02, 06-03)
 - Goal: QR code generation and scanning for easier SDP exchange
 - Plan 06-01 complete: QR libraries installed, QRCodeDisplay component, useCameraAvailability hook
 - Plan 06-02 complete: QRScanner component with useQRScanner hook and ScannerOverlay
+- Plan 06-03 complete: ConnectionDialog integration with QR display and scanner
 
 ## Key Decisions
 
@@ -98,6 +99,10 @@ Progress: [==========] 97%
 | No 'exact' facingMode constraint | iOS Safari compatibility | 2026-01-23 |
 | clip-path polygon for cutout overlay | Single div approach, cleaner than multiple positioned divs | 2026-01-23 |
 | useId for scanner container ID | Supports multiple scanner instances on same page | 2026-01-23 |
+| QR code as primary display | QR code prominently displayed, text code via copy button | 2026-01-22 |
+| scanMode state for mode toggle | Controls scanner vs text input view in enter-offer step | 2026-01-22 |
+| Auto-submit on QR scan | No confirmation step after successful scan | 2026-01-22 |
+| Keyboard icon for paste mode | Better semantic than Type icon | 2026-01-22 |
 
 ## Technical Context
 
@@ -136,8 +141,8 @@ Progress: [==========] 97%
 
 ## Session Continuity
 
-Last session: 2026-01-23T18:03:00Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-01-22T18:12:00Z
+Stopped at: Completed 06-03-PLAN.md (Phase 6 complete)
 Resume file: None
 
 ## Blockers
@@ -146,11 +151,28 @@ None currently.
 
 ## Notes
 
+**Plan 06-03:** ConnectionDialog QR Integration (COMPLETE)
+- QR codes displayed as primary in create-offer and show-answer steps
+- Copy text code button available as fallback
+- QR scanner integrated in enter-offer step with mode toggle
+- Camera availability check hides scan option when no camera
+- Auto-submit on successful QR scan
+
+**Plan 06-02:** QR Scanner Component (COMPLETE)
+- QRScanner component with useQRScanner hook
+- ScannerOverlay with cutout and corner brackets
+- Camera lifecycle management with html5-qrcode
+
 **Plan 06-01:** QR Foundation (COMPLETE)
 - Installed qrcode.react and html5-qrcode libraries
 - Created QRCodeDisplay component (192px, level M error correction)
 - Created useCameraAvailability hook using enumerateDevices()
 - Ready for integration into ConnectionDialog
+
+**Phase 6 Complete:** All 3 plans executed successfully
+- QR libraries and display component (06-01)
+- QR scanner with custom overlay (06-02)
+- ConnectionDialog integration (06-03)
 
 **Plan 05-04:** Connection status UI polish (COMPLETE)
 - Reconnecting state with orange styling and spinning RefreshCw icon
@@ -215,4 +237,4 @@ Bugs found and fixed during testing:
 ---
 
 *State initialized: 2026-01-22*
-*Last updated: 2026-01-23 18:00Z*
+*Last updated: 2026-01-22 18:12Z*
