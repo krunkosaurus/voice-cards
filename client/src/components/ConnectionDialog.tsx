@@ -149,21 +149,19 @@ export function ConnectionDialog({
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-3">
-              <div className="relative">
-                <Textarea
-                  value={offerCode || ''}
-                  readOnly
-                  className="font-mono text-xs h-24 resize-none pr-12"
-                />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="absolute top-2 right-2"
-                  onClick={() => offerCode && copyToClipboard(offerCode)}
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
+              <Textarea
+                value={offerCode || ''}
+                readOnly
+                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
+              />
+              <Button
+                className="w-full"
+                onClick={() => offerCode && copyToClipboard(offerCode)}
+              >
+                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                {copied ? 'Copied!' : 'Copy Code'}
+              </Button>
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
             <DialogFooter>
@@ -188,17 +186,21 @@ export function ConnectionDialog({
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value)}
                 placeholder="Paste connection code here..."
-                className="font-mono text-xs h-24 resize-none"
+                className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button
+                className="w-full"
+                onClick={handleSubmitOffer}
+                disabled={!inputCode.trim() || isLoading}
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Submit Code
+              </Button>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setStep('choose')}>
                 Back
-              </Button>
-              <Button onClick={handleSubmitOffer} disabled={!inputCode.trim() || isLoading}>
-                {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Continue
               </Button>
             </DialogFooter>
           </>
@@ -214,21 +216,19 @@ export function ConnectionDialog({
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-3">
-              <div className="relative">
-                <Textarea
-                  value={answerCode || ''}
-                  readOnly
-                  className="font-mono text-xs h-24 resize-none pr-12"
-                />
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="absolute top-2 right-2"
-                  onClick={() => answerCode && copyToClipboard(answerCode)}
-                >
-                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
+              <Textarea
+                value={answerCode || ''}
+                readOnly
+                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+                className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
+              />
+              <Button
+                className="w-full"
+                onClick={() => answerCode && copyToClipboard(answerCode)}
+              >
+                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                {copied ? 'Copied!' : 'Copy Code'}
+              </Button>
             </div>
             <DialogDescription className="text-xs">
               Connection will establish automatically once your peer enters this code.
@@ -250,17 +250,21 @@ export function ConnectionDialog({
                 value={inputCode}
                 onChange={(e) => setInputCode(e.target.value)}
                 placeholder="Paste response code here..."
-                className="font-mono text-xs h-24 resize-none"
+                className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
               />
               {error && <p className="text-sm text-destructive">{error}</p>}
+              <Button
+                className="w-full"
+                onClick={handleSubmitAnswer}
+                disabled={!inputCode.trim() || isLoading}
+              >
+                {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Connect
+              </Button>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setStep('create-offer')}>
                 Back
-              </Button>
-              <Button onClick={handleSubmitAnswer} disabled={!inputCode.trim() || isLoading}>
-                {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Connect
               </Button>
             </DialogFooter>
           </>
