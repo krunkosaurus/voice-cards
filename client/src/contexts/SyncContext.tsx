@@ -138,6 +138,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const connectionRef = useRef<WebRTCConnectionService | null>(null);
   const audioTransferRef = useRef<AudioTransferService | null>(null);
   const userRoleRef = useRef<UserRole | null>(null);
+  const hasInitialSyncedRef = useRef<boolean>(false);
 
   // ==========================================================================
   // Connection Management
@@ -177,6 +178,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       } else {
         audioTransferRef.current = null;
         setConnectionState('disconnected');
+        // Reset initial sync flag when disconnected
+        hasInitialSyncedRef.current = false;
       }
     },
     []
@@ -684,12 +687,16 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   // ==========================================================================
 
   useEffect(() => {
-    // When connection becomes 'connected' and user is editor, auto-start sync
+    // When connection becomes 'connected' and user is editor, auto-start sync ONCE
     if (
       connectionState === 'connected' &&
       userRoleRef.current === 'editor' &&
-      !syncState.isSyncing
+      !syncState.isSyncing &&
+      !hasInitialSyncedRef.current
     ) {
+      // Mark as synced to prevent repeated auto-syncs
+      hasInitialSyncedRef.current = true;
+
       // Small delay to ensure both sides are ready
       const timer = setTimeout(() => {
         console.log('[Sync] Auto-starting sync (XFER-01)');
