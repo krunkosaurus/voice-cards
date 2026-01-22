@@ -12,9 +12,12 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Copy, Check, Loader2 } from 'lucide-react';
+import { Copy, Check, Loader2, Camera, Keyboard } from 'lucide-react';
 import { toast } from 'sonner';
 import type { ConnectionState } from '@/types/sync';
+import { QRCodeDisplay } from '@/components/QRCodeDisplay';
+import { QRScanner } from '@/components/QRScanner/QRScanner';
+import { useCameraAvailability } from '@/hooks/useCameraAvailability';
 
 type DialogStep = 'choose' | 'create-offer' | 'enter-offer' | 'show-answer' | 'enter-answer' | 'connecting' | 'connected';
 
@@ -47,6 +50,8 @@ export function ConnectionDialog({
   const [inputCode, setInputCode] = useState('');
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [scanMode, setScanMode] = useState(false);
+  const hasCamera = useCameraAvailability();
 
   // Reset state when dialog opens (not on every state change)
   useEffect(() => {
@@ -54,6 +59,7 @@ export function ConnectionDialog({
       setStep('choose');
       setInputCode('');
       setCopied(false);
+      setScanMode(false);
     } else if (open && state === 'connected') {
       setStep('connected');
     }
@@ -91,14 +97,16 @@ export function ConnectionDialog({
     setStep('enter-offer');
   };
 
-  const handleSubmitOffer = async () => {
-    if (!inputCode.trim()) return;
+  const handleSubmitOffer = async (codeOverride?: string) => {
+    const code = codeOverride || inputCode.trim();
+    if (!code) return;
     setIsLoading(true);
-    await onAcceptOffer(inputCode.trim());
+    await onAcceptOffer(code);
     setIsLoading(false);
     if (!error) {
       setStep('show-answer');
       setInputCode('');
+      setScanMode(false);
     }
   };
 
@@ -149,23 +157,28 @@ export function ConnectionDialog({
             <DialogHeader>
               <DialogTitle>Share Your Code</DialogTitle>
               <DialogDescription>
-                Send this code to your peer. They will send back their code.
+                Have your peer scan this QR code, or copy the text code below.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-3">
-              <Textarea
-                value={offerCode || ''}
-                readOnly
-                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-                className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
-              />
-              <Button
-                className="w-full"
-                onClick={() => offerCode && copyToClipboard(offerCode)}
-              >
-                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                {copied ? 'Copied!' : 'Copy Code'}
-              </Button>
+            <div className="py-4 flex flex-col items-center gap-4">
+              {/* QR code is primary */}
+              {offerCode && (
+                <div className="p-4 bg-white rounded-lg">
+                  <QRCodeDisplay code={offerCode} size={192} />
+                </div>
+              )}
+
+              {/* Text code fallback with copy button */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => offerCode && copyToClipboard(offerCode)}
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? 'Copied!' : 'Copy text code'}
+                </Button>
+              </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
             <DialogFooter>
@@ -216,25 +229,30 @@ export function ConnectionDialog({
             <DialogHeader>
               <DialogTitle>Send Your Code Back</DialogTitle>
               <DialogDescription>
-                Send this code back to complete the connection.
+                Have your peer scan this QR code, or copy the text code below.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4 space-y-3">
-              <Textarea
-                value={answerCode || ''}
-                readOnly
-                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-                className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
-              />
-              <Button
-                className="w-full"
-                onClick={() => answerCode && copyToClipboard(answerCode)}
-              >
-                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                {copied ? 'Copied!' : 'Copy Code'}
-              </Button>
+            <div className="py-4 flex flex-col items-center gap-4">
+              {/* QR code is primary */}
+              {answerCode && (
+                <div className="p-4 bg-white rounded-lg">
+                  <QRCodeDisplay code={answerCode} size={192} />
+                </div>
+              )}
+
+              {/* Text code fallback with copy button */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => answerCode && copyToClipboard(answerCode)}
+                >
+                  {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                  {copied ? 'Copied!' : 'Copy text code'}
+                </Button>
+              </div>
             </div>
-            <DialogDescription className="text-xs">
+            <DialogDescription className="text-xs text-center">
               Connection will establish automatically once your peer enters this code.
             </DialogDescription>
           </>
