@@ -498,9 +498,9 @@ export default function Home() {
     setTrimSplitCard(card);
   };
 
-  const handleCardTitleUpdate = (updatedCard: Card) => {
-    // Use synced action to broadcast to viewer if connected
-    syncedUpdateCard(updatedCard);
+  const handleCardTitleUpdate = (_updatedCard: Card) => {
+    // Card.tsx now handles state update and sync broadcast directly via useSyncedActions
+    // This callback is kept for any future parent-level handling (e.g., history recording)
   };
 
   const handleTranscriptGenerated = async (cardId: string, transcript: TranscriptSegment[]) => {

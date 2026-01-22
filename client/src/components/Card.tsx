@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { Card as CardType, TranscriptSegment } from '@/types';
 import { CARD_COLORS } from '@/lib/constants';
 import { formatTime, cn } from '@/lib/utils';
+import { useSyncedActions } from '@/hooks/useSyncedActions';
 import { Button } from './ui/button';
 import {
   DropdownMenu,
@@ -82,6 +83,9 @@ export function Card({
   const [userOpenedTranscript, setUserOpenedTranscript] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const colorHex = CARD_COLORS[card.color].hex;
+
+  // Use synced actions for card updates to broadcast to peer when connected
+  const { updateCard: syncedUpdateCard } = useSyncedActions();
 
   // Auto-show transcript when playing and transcript exists (only if global setting is enabled)
   useEffect(() => {
@@ -166,7 +170,11 @@ export function Card({
   const handleTitleSave = async () => {
     if (editedTitle.trim() && editedTitle !== card.label) {
       const updatedCard = { ...card, label: editedTitle.trim(), updatedAt: new Date().toISOString() };
+      // Save to IndexedDB
       await import('@/services/db').then(m => m.saveCard(updatedCard));
+      // Use synced action to update state and broadcast to peer if connected
+      syncedUpdateCard(updatedCard);
+      // Also notify parent for any additional handling
       if (onTitleUpdate) {
         onTitleUpdate(updatedCard);
       }
