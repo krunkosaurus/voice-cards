@@ -97,9 +97,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Operation types and message creators (extend sync.ts and syncProtocol.ts)
-- [ ] 03-02-PLAN.md — Operation handlers in SyncContext (receive and apply remote operations)
-- [ ] 03-03-PLAN.md — Broadcast wrappers (intercept local actions, broadcast to peer)
+- [x] 03-01-PLAN.md — Operation types and message creators (extend sync.ts and syncProtocol.ts)
+- [x] 03-02-PLAN.md — Operation handlers in SyncContext (receive and apply remote operations)
+- [x] 03-03-PLAN.md — Broadcast wrappers (intercept local actions, broadcast to peer)
 
 **Deliverables:**
 - Sync-aware action wrappers (addCard, updateCard, deleteCard, reorderCards)
@@ -109,11 +109,11 @@ Plans:
 - Audio change sync (re-record, trim)
 
 **Success Criteria:**
-- [ ] When editor creates a card, viewer sees it appear within 1 second (SYNC-01)
-- [ ] When editor deletes a card, viewer sees it disappear within 1 second (SYNC-02)
-- [ ] When editor edits card metadata (label, notes, tags, color), viewer sees changes (SYNC-03)
-- [ ] When editor reorders cards, viewer sees new order (SYNC-04)
-- [ ] When editor trims or re-records audio, viewer receives updated audio (SYNC-05)
+- [x] When editor creates a card, viewer sees it appear within 1 second (SYNC-01)
+- [x] When editor deletes a card, viewer sees it disappear within 1 second (SYNC-02)
+- [x] When editor edits card metadata (label, notes, tags, color), viewer sees changes (SYNC-03)
+- [x] When editor reorders cards, viewer sees new order (SYNC-04)
+- [x] When editor trims or re-records audio, viewer receives updated audio (SYNC-05)
 
 ---
 
@@ -124,6 +124,14 @@ Plans:
 **Requirements:** ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05
 
 **Depends on:** Phase 3 (sync must be working)
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Role protocol types and message creators
+- [ ] 04-02-PLAN.md — Role transfer state and handlers in SyncContext
+- [ ] 04-03-PLAN.md — Role UI components (RoleBadge, RoleRequestDialog, Header integration)
+- [ ] 04-04-PLAN.md — UI enforcement (disable editing controls for viewers)
 
 **Deliverables:**
 - Role indicator badge ("You are editing" / "Viewing only")
@@ -204,11 +212,11 @@ Plans:
 | XFER-03 | 2 | Complete |
 | XFER-04 | 2 | Complete |
 | XFER-05 | 2 | Complete |
-| SYNC-01 | 3 | Pending |
-| SYNC-02 | 3 | Pending |
-| SYNC-03 | 3 | Pending |
-| SYNC-04 | 3 | Pending |
-| SYNC-05 | 3 | Pending |
+| SYNC-01 | 3 | Complete |
+| SYNC-02 | 3 | Complete |
+| SYNC-03 | 3 | Complete |
+| SYNC-04 | 3 | Complete |
+| SYNC-05 | 3 | Complete |
 | ROLE-01 | 4 | Pending |
 | ROLE-02 | 4 | Pending |
 | ROLE-03 | 4 | Pending |
@@ -253,3 +261,5 @@ Phase 1: WebRTC Connection
 *Phase 1 planned: 2026-01-22*
 *Phase 2 planned: 2026-01-22*
 *Phase 3 planned: 2026-01-22*
+*Phase 3 executed: 2026-01-22*
+*Phase 4 planned: 2026-01-22*
