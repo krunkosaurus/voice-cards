@@ -1194,14 +1194,17 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   /**
    * Handle incoming role messages.
+   * Uses userRoleRef instead of syncState.role to avoid stale closure issues.
    */
   const handleRoleMessage = useCallback((msg: RoleMessage) => {
-    console.log('[Sync] Received role message:', msg.type);
+    const currentRole = userRoleRef.current;
+    console.log('[Sync] Received role message:', msg.type, 'current role:', currentRole);
 
     switch (msg.type) {
       case 'role_request':
         // Editor receives request from viewer
-        if (syncState.role === 'editor') {
+        if (currentRole === 'editor') {
+          console.log('[Sync] Setting pending_approval state');
           setSyncState((prev) => ({
             ...prev,
             roleTransferState: { status: 'pending_approval' },
@@ -1211,7 +1214,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       case 'role_grant':
         // Viewer receives grant from editor
-        if (syncState.role === 'viewer') {
+        if (currentRole === 'viewer') {
           console.log('[Sync] Role granted - becoming editor');
 
           // Enter transferring state briefly (ROLE-05)
@@ -1235,7 +1238,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       case 'role_deny':
         // Viewer receives denial from editor
-        if (syncState.role === 'viewer') {
+        if (currentRole === 'viewer') {
           setSyncState((prev) => ({
             ...prev,
             roleTransferState: { status: 'denied', reason: msg.reason },
@@ -1261,7 +1264,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         }));
         break;
     }
-  }, [syncState.role]);
+  }, []);
 
   // ==========================================================================
   // Getters for broadcast wrappers
