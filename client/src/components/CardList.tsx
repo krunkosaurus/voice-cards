@@ -53,6 +53,7 @@ interface CardListProps {
   isSelectionMode?: boolean;
   selectedCardIds?: Set<string>;
   onToggleCardSelection?: (cardId: string) => void;
+  canEdit?: boolean;
 }
 
 function SortableCard({
@@ -81,6 +82,7 @@ function SortableCard({
   isSelectionMode,
   isSelected,
   onToggleSelection,
+  canEdit = true,
 }: {
   card: CardType;
   cardNumber: number;
@@ -107,6 +109,7 @@ function SortableCard({
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelection?: () => void;
+  canEdit?: boolean;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
@@ -146,7 +149,8 @@ function SortableCard({
         onToggleSelection={onToggleSelection}
         onTitleUpdate={onTitleUpdate}
         onTranscriptGenerated={onTranscriptGenerated}
-        dragListeners={listeners}
+        dragListeners={canEdit ? listeners : undefined}
+        canEdit={canEdit}
       />
     </div>
   );
@@ -205,9 +209,14 @@ export function CardList({
   isSelectionMode = false,
   selectedCardIds = new Set(),
   onToggleCardSelection,
+  canEdit = true,
 }: CardListProps) {
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: canEdit
+        ? { distance: 8 }
+        : { distance: Infinity }, // Never activates for viewer
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -329,6 +338,7 @@ export function CardList({
                   isSelectionMode={isSelectionMode}
                   isSelected={selectedCardIds.has(card.id)}
                   onToggleSelection={onToggleCardSelection ? () => onToggleCardSelection(card.id) : undefined}
+                  canEdit={canEdit}
                 />
                 <InsertionButton
                   onClick={() => onInsertAt(index + 1)}
