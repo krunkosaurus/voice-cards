@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
 **Current Phase:** 4
-**Phase Status:** In progress (2/5 plans)
+**Phase Status:** In progress (3/5 plans)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -11,7 +11,7 @@
 | 1 | WebRTC Connection | Complete (verified by user) | CONN-01, CONN-02, CONN-03, CONN-04, CONN-05 |
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
-| 4 | Editor Role System | In Progress (2/5) | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
+| 4 | Editor Role System | In Progress (3/5) | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
@@ -22,11 +22,12 @@ Progress: [========..] 80%
 ## Current Focus
 
 **Phase 4: Editor Role System - IN PROGRESS**
-- Status: Plan 04-02 complete (role state management)
+- Status: Plan 04-03 complete (role UI components)
 - Goal: Enable role transfer between editor and viewer
 - Plan 04-01: Role protocol message types (COMPLETE)
 - Plan 04-02: Role state management (COMPLETE)
-- Next Action: Plan 04-03 (role UI components)
+- Plan 04-03: Role UI components (COMPLETE)
+- Next Action: Plan 04-04 (wire up role UI in Home.tsx)
 
 ## Key Decisions
 
@@ -71,6 +72,9 @@ Progress: [========..] 80%
 | Track audio BEFORE async ops | Prevent race where chunks complete before cardId tracked | 2026-01-22 |
 | Reset sync progress after real-time op | Real-time ops don't have sync_complete message | 2026-01-22 |
 | WaveformThumbnail key with updatedAt | Force remount to load audio after real-time sync | 2026-01-22 |
+| RoleBadge follows SyncIndicator pattern | Consistent styling for header badges | 2026-01-22 |
+| RoleBadge returns null when disconnected | No role indicator needed in local mode | 2026-01-22 |
+| RoleBadge before SyncIndicator in header | Role status more prominent than connection status | 2026-01-22 |
 | canEdit=true when disconnected | Local editing allowed when not connected | 2026-01-22 |
 | canEdit=false during transferring | ROLE-05: No edits during role handoff | 2026-01-22 |
 | Denied state auto-clears after 3s | Better UX, viewer can retry request | 2026-01-22 |
@@ -102,11 +106,13 @@ Progress: [========..] 80%
 - `client/src/components/SyncProgress.tsx` - Progress bar during sync transfer (XFER-02)
 - `client/src/components/OverwriteConfirmDialog.tsx` - Warning dialog before overwrite (XFER-04)
 - `client/src/hooks/useSyncedActions.ts` - Hook wrapping ProjectContext actions with broadcast logic
+- `client/src/components/RoleBadge.tsx` - Role indicator badge with clickable viewer state
+- `client/src/components/RoleRequestDialog.tsx` - Dialog for editor to approve/deny role requests
 
 ## Session Continuity
 
-Last session: 2026-01-22T14:08:00Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-01-22T14:14:38Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -115,7 +121,13 @@ None currently.
 
 ## Notes
 
-Phase 4 in progress. Role state management complete.
+Phase 4 in progress. Role UI components complete.
+
+**Plan 04-03:** Role UI components (COMPLETE)
+- RoleBadge component showing "Editing" or "Viewing" state
+- RoleRequestDialog for editor approval of role transfer
+- Header integration with RoleBadge before SyncIndicator
+- Badge states: Editing, Viewing, Requesting..., Transferring..., Denied
 
 **Plan 04-02:** Role state management (COMPLETE)
 - RoleTransferState discriminated union (idle, pending_request, pending_approval, transferring, denied)
