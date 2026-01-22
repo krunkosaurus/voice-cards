@@ -48,18 +48,16 @@ export function ConnectionDialog({
   const [copied, setCopied] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Reset state when dialog opens
+  // Reset state when dialog opens (not on every state change)
   useEffect(() => {
-    if (open) {
-      if (state === 'connected') {
-        setStep('connected');
-      } else {
-        setStep('choose');
-        setInputCode('');
-        setCopied(false);
-      }
+    if (open && state === 'disconnected') {
+      setStep('choose');
+      setInputCode('');
+      setCopied(false);
+    } else if (open && state === 'connected') {
+      setStep('connected');
     }
-  }, [open, state]);
+  }, [open]);
 
   // Update step based on connection state
   useEffect(() => {
