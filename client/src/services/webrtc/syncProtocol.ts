@@ -12,8 +12,14 @@ import {
   SyncErrorMessage,
   SyncControlMessage,
   CardMetadata,
+  CardCreateOperation,
+  CardUpdateOperation,
+  CardDeleteOperation,
+  CardReorderOperation,
+  CardAudioChangeOperation,
+  SyncOperation,
 } from '@/types/sync';
-import { Card, Project } from '@/types';
+import { Card, Project, TranscriptSegment } from '@/types';
 
 // =============================================================================
 // Constants
@@ -49,6 +55,18 @@ const SYNC_MESSAGE_TYPES = [
   'chunk_complete',
   'sync_complete',
   'sync_error',
+] as const;
+
+/**
+ * Operation message type strings for real-time sync.
+ * Used by isOperationMessage type guard.
+ */
+export const OPERATION_MESSAGE_TYPES = [
+  'op_card_create',
+  'op_card_update',
+  'op_card_delete',
+  'op_card_reorder',
+  'op_card_audio_change',
 ] as const;
 
 // =============================================================================
@@ -293,4 +311,114 @@ export function isSyncControlMessage(
   msg: ControlMessage
 ): msg is SyncControlMessage {
   return SYNC_MESSAGE_TYPES.includes(msg.type as typeof SYNC_MESSAGE_TYPES[number]);
+}
+
+/**
+ * Type guard to check if a ControlMessage is a SyncOperation.
+ * Enables routing of real-time sync operations.
+ *
+ * @param msg - Any control message
+ * @returns true if msg is a SyncOperation (card create/update/delete/reorder/audio_change)
+ */
+export function isOperationMessage(
+  msg: ControlMessage
+): msg is SyncOperation {
+  return OPERATION_MESSAGE_TYPES.includes(msg.type as typeof OPERATION_MESSAGE_TYPES[number]);
+}
+
+// =============================================================================
+// Operation Message Creators
+// =============================================================================
+
+/**
+ * Create a card create operation message.
+ * Editor broadcasts this when a new card is created.
+ *
+ * @param card - The full card object
+ * @param audioSize - Size of audio blob in bytes (0 if no audio)
+ */
+export function createCardCreateOp(
+  card: Card,
+  audioSize: number
+): MessageWithoutMeta<CardCreateOperation> {
+  return {
+    type: 'op_card_create',
+    card,
+    audioSize,
+  };
+}
+
+/**
+ * Create a card update operation message.
+ * Editor broadcasts this when card metadata changes.
+ *
+ * @param cardId - ID of the card being updated
+ * @param changes - Partial card metadata (label, notes, tags, color only)
+ */
+export function createCardUpdateOp(
+  cardId: string,
+  changes: Partial<Pick<Card, 'label' | 'notes' | 'tags' | 'color'>>
+): MessageWithoutMeta<CardUpdateOperation> {
+  return {
+    type: 'op_card_update',
+    cardId,
+    changes,
+  };
+}
+
+/**
+ * Create a card delete operation message.
+ * Editor broadcasts this when a card is deleted.
+ *
+ * @param cardId - ID of the card being deleted
+ */
+export function createCardDeleteOp(
+  cardId: string
+): MessageWithoutMeta<CardDeleteOperation> {
+  return {
+    type: 'op_card_delete',
+    cardId,
+  };
+}
+
+/**
+ * Create a card reorder operation message.
+ * Editor broadcasts this when card order changes.
+ *
+ * @param cardOrder - Array of { id, order } for reordered cards
+ */
+export function createCardReorderOp(
+  cardOrder: Array<{ id: string; order: number }>
+): MessageWithoutMeta<CardReorderOperation> {
+  return {
+    type: 'op_card_reorder',
+    cardOrder,
+  };
+}
+
+/**
+ * Create a card audio change operation message.
+ * Editor broadcasts this when card audio is modified (re-record, append).
+ *
+ * @param cardId - ID of the card with audio change
+ * @param duration - New audio duration in seconds
+ * @param audioSize - Size of new audio blob in bytes
+ * @param waveformData - Optional waveform data
+ * @param transcript - Optional transcript segments
+ */
+export function createCardAudioChangeOp(
+  cardId: string,
+  duration: number,
+  audioSize: number,
+  waveformData?: number[],
+  transcript?: TranscriptSegment[]
+): MessageWithoutMeta<CardAudioChangeOperation> {
+  return {
+    type: 'op_card_audio_change',
+    cardId,
+    duration,
+    waveformData,
+    transcript,
+    audioSize,
+  };
 }
