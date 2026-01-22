@@ -1,7 +1,7 @@
 # Milestone State: v1 P2P Sync
 
-**Current Phase:** 4
-**Phase Status:** Complete (4/4 plans verified)
+**Current Phase:** 5
+**Phase Status:** In Progress (1/4 plans complete)
 **Updated:** 2026-01-22
 
 ## Progress
@@ -12,7 +12,7 @@
 | 2 | Initial Sync | Complete (4/4 plans) | XFER-01, XFER-02, XFER-03, XFER-04, XFER-05 |
 | 3 | Real-Time Sync | Verified | SYNC-01, SYNC-02, SYNC-03, SYNC-04, SYNC-05 |
 | 4 | Editor Role System | Verified | ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05 |
-| 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
+| 5 | Connection Polish | In Progress (1/4 plans) | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
 **Overall:** 4/6 phases complete
@@ -21,11 +21,11 @@ Progress: [=========.] 90%
 
 ## Current Focus
 
-**Phase 4: Editor Role System - VERIFIED**
-- Status: All 4 plans complete, all 5 requirements verified
-- Goal: Only one person can edit at a time, with ability to hand off editing rights
-- Verification: 5/5 must-haves passed
-- Next Action: Proceed to Phase 5 (Connection Polish)
+**Phase 5: Connection Polish - IN PROGRESS**
+- Status: 1/4 plans complete (05-01)
+- Goal: Connection health monitoring, graceful disconnect, and UI polish
+- Completed: Heartbeat and disconnect message types (05-01)
+- Next Action: Execute 05-02 (HeartbeatManager service)
 
 ## Key Decisions
 
@@ -80,6 +80,9 @@ Progress: [=========.] 90%
 | canEdit prop drilling pattern | Pass canEdit from Home through CardList to Card for viewer restrictions | 2026-01-22 |
 | Early-return guards in handlers | Defense in depth: check canEdit at start of editing handlers | 2026-01-22 |
 | Drag handle faded not hidden | opacity-30 keeps UI consistent while preventing interaction | 2026-01-22 |
+| sentAt in heartbeat ping/pong | Simple RTT calculation by echoing ping's sentAt in pong | 2026-01-22 |
+| Disconnect reason discriminant | 'user_initiated' vs 'error' for clear routing logic | 2026-01-22 |
+| HeartbeatMessage union type | Combined type guard for both ping and pong | 2026-01-22 |
 
 ## Technical Context
 
@@ -112,8 +115,8 @@ Progress: [=========.] 90%
 
 ## Session Continuity
 
-Last session: 2026-01-22T14:23:52Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-01-22T16:56:19Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -121,6 +124,14 @@ Resume file: None
 None currently.
 
 ## Notes
+
+**Plan 05-01:** Heartbeat protocol types (COMPLETE)
+- HeartbeatPing, HeartbeatPong interfaces with sentAt timestamp
+- DisconnectMessage interface with reason discriminant
+- HeartbeatMessage union type
+- ConnectionState 'reconnecting' added
+- createHeartbeatPing, createHeartbeatPong, createDisconnect message creators
+- isHeartbeatMessage, isDisconnectMessage type guards
 
 **Phase 4 Complete:** All 4 plans executed and verified successfully
 - Role protocol message types (04-01)
