@@ -23,6 +23,10 @@ import {
   RoleDenyMessage,
   RoleTransferCompleteMessage,
   RoleMessage,
+  HeartbeatPing,
+  HeartbeatPong,
+  HeartbeatMessage,
+  DisconnectMessage,
 } from '@/types/sync';
 import { Card, Project, TranscriptSegment } from '@/types';
 
@@ -508,4 +512,59 @@ export function isRoleMessage(
   msg: ControlMessage
 ): msg is RoleMessage {
   return ROLE_MESSAGE_TYPES.includes(msg.type as typeof ROLE_MESSAGE_TYPES[number]);
+}
+
+// =============================================================================
+// Heartbeat and Disconnect Message Creators
+// =============================================================================
+
+/**
+ * Create a heartbeat ping message.
+ * Sent periodically to detect stale connections.
+ */
+export function createHeartbeatPing(): Omit<HeartbeatPing, 'timestamp' | 'id'> {
+  return {
+    type: 'heartbeat_ping',
+    sentAt: Date.now(),
+  };
+}
+
+/**
+ * Create a heartbeat pong response.
+ * Echoes back the ping's sentAt for RTT calculation.
+ */
+export function createHeartbeatPong(sentAt: number): Omit<HeartbeatPong, 'timestamp' | 'id'> {
+  return {
+    type: 'heartbeat_pong',
+    sentAt,
+  };
+}
+
+/**
+ * Create a disconnect message.
+ * Send before intentionally closing connection.
+ */
+export function createDisconnect(reason: 'user_initiated' | 'error'): Omit<DisconnectMessage, 'timestamp' | 'id'> {
+  return {
+    type: 'disconnect',
+    reason,
+  };
+}
+
+// =============================================================================
+// Heartbeat and Disconnect Type Guards
+// =============================================================================
+
+/**
+ * Type guard for heartbeat messages.
+ */
+export function isHeartbeatMessage(msg: ControlMessage): msg is HeartbeatMessage {
+  return msg.type === 'heartbeat_ping' || msg.type === 'heartbeat_pong';
+}
+
+/**
+ * Type guard for disconnect message.
+ */
+export function isDisconnectMessage(msg: ControlMessage): msg is DisconnectMessage {
+  return msg.type === 'disconnect';
 }
