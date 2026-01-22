@@ -32,9 +32,9 @@
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Types & SDP codec (lz-string compression)
-- [ ] 01-02-PLAN.md — WebRTCConnectionService (RTCPeerConnection lifecycle, dual DataChannels)
-- [ ] 01-03-PLAN.md — Connection hook & UI (useWebRTC, ConnectionDialog, SyncIndicator, Header integration)
+- [x] 01-01-PLAN.md — Types & SDP codec (lz-string compression)
+- [x] 01-02-PLAN.md — WebRTCConnectionService (RTCPeerConnection lifecycle, dual DataChannels)
+- [x] 01-03-PLAN.md — Connection hook & UI (useWebRTC, ConnectionDialog, SyncIndicator, Header integration)
 
 **Deliverables:**
 - WebRTCConnectionService with RTCPeerConnection lifecycle management
@@ -45,11 +45,11 @@ Plans:
 - Dual DataChannel setup (control channel for metadata, binary channel for audio)
 
 **Success Criteria:**
-- [ ] User can click "Connect" and generate a shareable code (CONN-01)
-- [ ] User can paste a received code to initiate pairing (CONN-02)
-- [ ] After entering offer code, user sees answer code to send back (CONN-03)
-- [ ] After both codes exchanged, connection establishes and DataChannels open (CONN-04)
-- [ ] User sees visual indicator of connection state at all times (CONN-05)
+- [x] User can click "Connect" and generate a shareable code (CONN-01)
+- [x] User can paste a received code to initiate pairing (CONN-02)
+- [x] After entering offer code, user sees answer code to send back (CONN-03)
+- [x] After both codes exchanged, connection establishes and DataChannels open (CONN-04)
+- [x] User sees visual indicator of connection state at all times (CONN-05)
 
 ---
 
@@ -60,6 +60,14 @@ Plans:
 **Requirements:** XFER-01, XFER-02, XFER-03, XFER-04, XFER-05
 
 **Depends on:** Phase 1 (connection must be established)
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Sync protocol types and message utilities
+- [ ] 02-02-PLAN.md — AudioTransferService with chunking and backpressure
+- [ ] 02-03-PLAN.md — SyncContext and projectSync utilities
+- [ ] 02-04-PLAN.md — Sync UI components (progress, dialogs, integration)
 
 **Deliverables:**
 - SyncContext wrapping ProjectContext for sync-aware state
@@ -177,11 +185,11 @@ Plans:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONN-01 | 1 | Pending |
-| CONN-02 | 1 | Pending |
-| CONN-03 | 1 | Pending |
-| CONN-04 | 1 | Pending |
-| CONN-05 | 1 | Pending |
+| CONN-01 | 1 | Complete |
+| CONN-02 | 1 | Complete |
+| CONN-03 | 1 | Complete |
+| CONN-04 | 1 | Complete |
+| CONN-05 | 1 | Complete |
 | CONN-06 | 6 | Pending |
 | CONN-07 | 5 | Pending |
 | CONN-08 | 5 | Pending |
@@ -237,3 +245,4 @@ Phase 1: WebRTC Connection
 
 *Roadmap created: 2026-01-22*
 *Phase 1 planned: 2026-01-22*
+*Phase 2 planned: 2026-01-22*
