@@ -306,30 +306,74 @@ export function ConnectionDialog({
         {step === 'enter-answer' && (
           <>
             <DialogHeader>
-              <DialogTitle>Enter Response Code</DialogTitle>
+              <DialogTitle>
+                {scanMode ? 'Scan Response QR' : 'Enter Response Code'}
+              </DialogTitle>
               <DialogDescription>
-                Paste the code your peer sent back.
+                {scanMode
+                  ? 'Point your camera at your peer\'s QR code'
+                  : 'Scan their QR code or paste the text code'}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-3">
-              <Textarea
-                value={inputCode}
-                onChange={(e) => setInputCode(e.target.value)}
-                placeholder="Paste response code here..."
-                className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
-              />
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button
-                className="w-full"
-                onClick={handleSubmitAnswer}
-                disabled={!inputCode.trim() || isLoading}
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
-                Connect
-              </Button>
+              {scanMode ? (
+                // Scanner view
+                <div className="relative h-64 overflow-hidden rounded-lg">
+                  <QRScanner
+                    active={scanMode}
+                    onScan={(code) => {
+                      setScanMode(false);
+                      setInputCode(code);
+                      // Auto-submit the answer
+                      setIsLoading(true);
+                      onAcceptAnswer(code).finally(() => setIsLoading(false));
+                    }}
+                    onError={() => {
+                      setScanMode(false);
+                    }}
+                  />
+                </div>
+              ) : (
+                // Text input view
+                <>
+                  <Textarea
+                    value={inputCode}
+                    onChange={(e) => setInputCode(e.target.value)}
+                    placeholder="Paste response code here..."
+                    className="font-mono text-xs h-24 resize-none break-all overflow-hidden"
+                  />
+                  {error && <p className="text-sm text-destructive">{error}</p>}
+                  <Button
+                    className="w-full"
+                    onClick={handleSubmitAnswer}
+                    disabled={!inputCode.trim() || isLoading}
+                  >
+                    {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Connect
+                  </Button>
+                </>
+              )}
+
+              {/* Mode toggle - only show scan option if camera available */}
+              {hasCamera !== null && (
+                <div className="flex justify-center pt-2">
+                  {hasCamera && !scanMode && (
+                    <Button variant="ghost" size="sm" onClick={() => setScanMode(true)}>
+                      <Camera className="w-4 h-4 mr-2" />
+                      Scan QR instead
+                    </Button>
+                  )}
+                  {scanMode && (
+                    <Button variant="ghost" size="sm" onClick={() => setScanMode(false)}>
+                      <Keyboard className="w-4 h-4 mr-2" />
+                      Paste text instead
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setStep('create-offer')}>
+              <Button variant="outline" onClick={() => { setScanMode(false); setStep('create-offer'); }}>
                 Back
               </Button>
             </DialogFooter>
