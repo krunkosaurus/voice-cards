@@ -531,18 +531,34 @@ export class WebRTCConnectionService {
         return;
       }
 
+      let resolved = false;
+
       // Set up timeout
       const timeout = setTimeout(() => {
-        console.warn('[WebRTC] ICE gathering timeout');
+        if (resolved) return;
+        resolved = true;
+        console.warn('[WebRTC] ICE gathering timeout - proceeding with available candidates');
         cleanup();
-        // Resolve anyway - we may have enough candidates
         resolve();
       }, this.config.iceGatheringTimeout);
 
       // Listener for gathering state change
       const onGatheringStateChange = () => {
+        if (resolved) return;
         if (this.pc?.iceGatheringState === 'complete') {
-          console.log('[WebRTC] ICE gathering complete');
+          resolved = true;
+          console.log('[WebRTC] ICE gathering complete (state change)');
+          cleanup();
+          resolve();
+        }
+      };
+
+      // Fallback: null candidate indicates gathering complete (more reliable in some browsers)
+      const onIceCandidate = (event: RTCPeerConnectionIceEvent) => {
+        if (resolved) return;
+        if (event.candidate === null) {
+          resolved = true;
+          console.log('[WebRTC] ICE gathering complete (null candidate)');
           cleanup();
           resolve();
         }
@@ -555,12 +571,14 @@ export class WebRTCConnectionService {
           'icegatheringstatechange',
           onGatheringStateChange
         );
+        this.pc?.removeEventListener('icecandidate', onIceCandidate);
       };
 
       this.pc.addEventListener(
         'icegatheringstatechange',
         onGatheringStateChange
       );
+      this.pc.addEventListener('icecandidate', onIceCandidate);
     });
   }
 

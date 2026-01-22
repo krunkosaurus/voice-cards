@@ -77,7 +77,7 @@ export const DEFAULT_ICE_SERVERS: RTCIceServer[] = [
  */
 export const DEFAULT_CONNECTION_CONFIG: ConnectionConfig = {
   iceServers: DEFAULT_ICE_SERVERS,
-  iceGatheringTimeout: 10000, // 10 seconds to gather ICE candidates
+  iceGatheringTimeout: 3000, // 3 seconds to gather ICE candidates
 };
 
 // =============================================================================
