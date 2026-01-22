@@ -15,17 +15,17 @@
 | 5 | Connection Polish | Not Started | CONN-07, CONN-08, PRES-01, PRES-02 |
 | 6 | QR Code Support | Not Started | CONN-06 |
 
-**Overall:** 0/6 phases complete (Phase 1: 1/3 plans complete)
+**Overall:** 0/6 phases complete (Phase 1: 2/3 plans complete)
 
-Progress: [==........] 10%
+Progress: [===.......] 20%
 
 ## Current Focus
 
 **Phase 1: WebRTC Connection**
-- Status: In Progress (Plan 1 of 3 complete)
+- Status: In Progress (Plan 2 of 3 complete)
 - Goal: Users can establish a P2P connection by exchanging codes manually
-- Last Completed: 01-01-PLAN.md (Types & SDP Codec)
-- Next Action: Execute 01-02-PLAN.md (Offer Generation)
+- Last Completed: 01-02-PLAN.md (WebRTC Connection Service)
+- Next Action: Execute 01-03-PLAN.md (Connection UI)
 
 ## Key Decisions
 
@@ -40,6 +40,9 @@ Progress: [==........] 10%
 | lz-string for SDP encoding | URL-safe, good compression, no external deps | 2026-01-22 |
 | Compact JSON (t/s keys) | Minimizes encoded SDP size | 2026-01-22 |
 | SDPCodecResult pattern | Type-safe error handling without exceptions | 2026-01-22 |
+| ICE timeout resolves (not rejects) | Allows partial candidate list rather than failing | 2026-01-22 |
+| Wait for BOTH DataChannels | Only 'connected' when controlReady && binaryReady | 2026-01-22 |
+| Safari Blob compatibility | Convert Blob to ArrayBuffer in binary handler | 2026-01-22 |
 
 ## Technical Context
 
@@ -59,11 +62,12 @@ Progress: [==........] 10%
 **Key files created:**
 - `client/src/types/sync.ts` - ConnectionState, SDPCodecResult types
 - `client/src/services/webrtc/sdpCodec.ts` - encodeSDP, decodeSDP functions
+- `client/src/services/webrtc/connection.ts` - WebRTCConnectionService class
 
 ## Session Continuity
 
-Last session: 2026-01-22T10:27:58Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-01-22T10:33:50Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
 
 ## Blockers
@@ -72,9 +76,14 @@ None currently.
 
 ## Notes
 
-Phase 1 Plan 1 complete. TypeScript types and SDP codec foundation ready.
-SDP codec achieves ~13%+ compression, keeping codes under 2000 char URL limit.
-Ready for Plan 2: Offer Generation.
+Phase 1 Plan 2 complete. WebRTCConnectionService implements full offer/answer lifecycle.
+- createOffer() generates encoded offer with all ICE candidates
+- acceptOffer() decodes offer and generates answer
+- acceptAnswer() completes handshake
+- Dual DataChannels (control + binary) tracked separately
+- State machine: disconnected -> creating_offer -> awaiting_answer -> connecting -> connected
+
+Ready for Plan 3: Connection UI components.
 
 ---
 
