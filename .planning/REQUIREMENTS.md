@@ -80,37 +80,37 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONN-01 | TBD | Pending |
-| CONN-02 | TBD | Pending |
-| CONN-03 | TBD | Pending |
-| CONN-04 | TBD | Pending |
-| CONN-05 | TBD | Pending |
-| CONN-06 | TBD | Pending |
-| CONN-07 | TBD | Pending |
-| CONN-08 | TBD | Pending |
-| XFER-01 | TBD | Pending |
-| XFER-02 | TBD | Pending |
-| XFER-03 | TBD | Pending |
-| XFER-04 | TBD | Pending |
-| XFER-05 | TBD | Pending |
-| SYNC-01 | TBD | Pending |
-| SYNC-02 | TBD | Pending |
-| SYNC-03 | TBD | Pending |
-| SYNC-04 | TBD | Pending |
-| SYNC-05 | TBD | Pending |
-| ROLE-01 | TBD | Pending |
-| ROLE-02 | TBD | Pending |
-| ROLE-03 | TBD | Pending |
-| ROLE-04 | TBD | Pending |
-| ROLE-05 | TBD | Pending |
-| PRES-01 | TBD | Pending |
-| PRES-02 | TBD | Pending |
+| CONN-01 | 1 - WebRTC Connection | Pending |
+| CONN-02 | 1 - WebRTC Connection | Pending |
+| CONN-03 | 1 - WebRTC Connection | Pending |
+| CONN-04 | 1 - WebRTC Connection | Pending |
+| CONN-05 | 1 - WebRTC Connection | Pending |
+| CONN-06 | 6 - QR Code Support | Pending |
+| CONN-07 | 5 - Connection Polish | Pending |
+| CONN-08 | 5 - Connection Polish | Pending |
+| XFER-01 | 2 - Initial Sync | Pending |
+| XFER-02 | 2 - Initial Sync | Pending |
+| XFER-03 | 2 - Initial Sync | Pending |
+| XFER-04 | 2 - Initial Sync | Pending |
+| XFER-05 | 2 - Initial Sync | Pending |
+| SYNC-01 | 3 - Real-Time Sync | Pending |
+| SYNC-02 | 3 - Real-Time Sync | Pending |
+| SYNC-03 | 3 - Real-Time Sync | Pending |
+| SYNC-04 | 3 - Real-Time Sync | Pending |
+| SYNC-05 | 3 - Real-Time Sync | Pending |
+| ROLE-01 | 4 - Editor Role System | Pending |
+| ROLE-02 | 4 - Editor Role System | Pending |
+| ROLE-03 | 4 - Editor Role System | Pending |
+| ROLE-04 | 4 - Editor Role System | Pending |
+| ROLE-05 | 4 - Editor Role System | Pending |
+| PRES-01 | 5 - Connection Polish | Pending |
+| PRES-02 | 5 - Connection Polish | Pending |
 
 **Coverage:**
 - v1 requirements: 25 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 25
+- Mapped to phases: 25
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-22*
-*Last updated: 2026-01-22 after initial definition*
+*Last updated: 2026-01-22 after roadmap creation*
