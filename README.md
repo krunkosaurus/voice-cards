@@ -143,6 +143,20 @@ Requires:
 - IndexedDB
 - ES2020+ JavaScript features
 
+## Environment Variables
+
+Create a `.env` file in the project root for optional configuration:
+
+```bash
+# Voice API Authentication (optional)
+# Only required if the Sogni Voice API has authentication enabled
+# See: https://voice.sogni.ai/docs.html
+VITE_VOICE_AUTH_ENABLED=true
+VITE_VOICE_AUTH_API_KEY=your_api_key_here
+```
+
+If `VITE_VOICE_AUTH_ENABLED` is not set or is `false`, the transcription service will make requests without authentication headers.
+
 ## Development
 
 ```bash

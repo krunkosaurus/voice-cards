@@ -3,6 +3,20 @@ import type { TranscriptSegment } from '@/types';
 
 const API_BASE = 'https://voice.sogni.ai';
 
+// Optional API key authentication - only used if VITE_VOICE_AUTH_ENABLED=true
+const AUTH_ENABLED = import.meta.env.VITE_VOICE_AUTH_ENABLED === 'true';
+const AUTH_API_KEY = import.meta.env.VITE_VOICE_AUTH_API_KEY || '';
+
+// Debug: check if env vars are loaded
+console.log('[Transcription] Auth enabled:', AUTH_ENABLED, 'API key present:', !!AUTH_API_KEY);
+
+function getAuthHeaders(): HeadersInit {
+  if (AUTH_ENABLED && AUTH_API_KEY) {
+    return { 'X-API-Key': AUTH_API_KEY };
+  }
+  return {};
+}
+
 export interface TranscriptionResponse {
   success: boolean;
   timestamps?: TranscriptSegment[];
@@ -18,6 +32,7 @@ export async function transcribeAudio(audioBlob: Blob): Promise<TranscriptSegmen
 
   const response = await fetch(`${API_BASE}/transcribe`, {
     method: 'POST',
+    headers: getAuthHeaders(),
     body: formData,
   });
 
